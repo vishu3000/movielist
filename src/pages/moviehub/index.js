@@ -123,6 +123,7 @@ export default function MovieHub() {
             isLoading={isLoading}
             error={error}
             isLoadingMore={isLoadingMore}
+            platform="movie"
           />
         </div>
       </div>

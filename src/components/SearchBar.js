@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import tmdbApi from "../services/tmdbApi";
 
 export default function SearchBar() {
@@ -24,19 +25,7 @@ export default function SearchBar() {
   }, []);
 
   // Search function with debouncing
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (query.trim().length >= 2) {
-        performSearch();
-      } else {
-        setResults([]);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [query, searchType]);
-
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!query.trim()) return;
 
     setIsLoading(true);
@@ -68,7 +57,19 @@ export default function SearchBar() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [query, searchType]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (query.trim().length >= 2) {
+        performSearch();
+      } else {
+        setResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [query, searchType, performSearch]);
 
   const handleResultClick = (result) => {
     setIsOpen(false);
@@ -173,9 +174,11 @@ export default function SearchBar() {
                   >
                     <div className="flex-shrink-0 w-12 h-18">
                       {result.poster_path ? (
-                        <img
+                        <Image
                           src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
                           alt={result.title || result.name}
+                          width={48}
+                          height={72}
                           className="w-full h-full object-cover rounded"
                         />
                       ) : (
@@ -223,7 +226,7 @@ export default function SearchBar() {
               </div>
             ) : query.length >= 2 ? (
               <div className="p-4 text-center text-gray-400">
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             ) : null}
           </div>

@@ -23,50 +23,57 @@ export default function MovieList() {
     setHasMore(true);
   }, [category, query.page]);
 
+  const fetchMovies = useCallback(
+    async (page = 1, append = false) => {
+      try {
+        if (page === 1) {
+          setIsLoading(true);
+        } else {
+          setIsLoadingMore(true);
+        }
+        setError(null);
+
+        if (!process.env.NEXT_PUBLIC_MOVIE_API_KEY) {
+          throw new Error(
+            "TMDB API key is missing. Please add NEXT_PUBLIC_MOVIE_API_KEY to your .env.local file"
+          );
+        }
+
+        const data = await tmdbApi.getMoviesByCategory(
+          category,
+          page,
+          platform
+        );
+
+        if (data && data.length > 0) {
+          if (append) {
+            setMovies((prev) => [...prev, ...data]);
+          } else {
+            setMovies(data);
+          }
+          setHasMore(data.length === 20); // TMDB typically returns 20 movies per page
+        } else {
+          setHasMore(false);
+        }
+
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      } catch (err) {
+        console.error("Error fetching movies:", err);
+        setError(err.message);
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [category, platform]
+  );
+
   // Fetch movies for current page
   useEffect(() => {
     if (currentPage === 1) {
       fetchMovies();
     }
-  }, [currentPage, category]);
-
-  const fetchMovies = async (page = 1, append = false) => {
-    try {
-      if (page === 1) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
-      }
-      setError(null);
-
-      if (!process.env.NEXT_PUBLIC_MOVIE_API_KEY) {
-        throw new Error(
-          "TMDB API key is missing. Please add NEXT_PUBLIC_MOVIE_API_KEY to your .env.local file"
-        );
-      }
-
-      const data = await tmdbApi.getMoviesByCategory(category, page, platform);
-
-      if (data && data.length > 0) {
-        if (append) {
-          setMovies((prev) => [...prev, ...data]);
-        } else {
-          setMovies(data);
-        }
-        setHasMore(data.length === 20); // TMDB typically returns 20 movies per page
-      } else {
-        setHasMore(false);
-      }
-
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    } catch (err) {
-      console.error("Error fetching movies:", err);
-      setError(err.message);
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  };
+  }, [currentPage, fetchMovies]);
 
   // Load more movies when user scrolls to bottom
   const loadMore = useCallback(async () => {
@@ -75,7 +82,7 @@ export default function MovieList() {
       setCurrentPage(nextPage);
       await fetchMovies(nextPage, true);
     }
-  }, [currentPage, isLoadingMore, hasMore, category]);
+  }, [currentPage, isLoadingMore, hasMore, fetchMovies]);
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {

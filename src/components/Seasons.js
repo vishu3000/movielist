@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import TMDBApi from "../services/tmdbApi";
 
 const Seasons = ({ tvShow, msid }) => {
@@ -150,13 +151,15 @@ const Seasons = ({ tvShow, msid }) => {
 
                     {/* Episode Thumbnail */}
                     <div className="flex-shrink-0">
-                      <img
+                      <Image
                         src={
                           episode.still_path
                             ? `https://image.tmdb.org/t/p/w500${episode.still_path}`
                             : "/placeholder.png"
                         }
                         alt={episode.name}
+                        width={128}
+                        height={80}
                         className="w-32 h-20 object-cover rounded"
                         onError={(e) => {
                           e.target.src = "/placeholder.png";

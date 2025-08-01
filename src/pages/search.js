@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import tmdbApi from "../services/tmdbApi";
@@ -12,13 +12,7 @@ export default function SearchResults() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentType, setCurrentType] = useState(searchType);
 
-  useEffect(() => {
-    if (query) {
-      performSearch();
-    }
-  }, [query, currentType]);
-
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!query) return;
 
     setIsLoading(true);
@@ -52,7 +46,13 @@ export default function SearchResults() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [query, currentType]);
+
+  useEffect(() => {
+    if (query) {
+      performSearch();
+    }
+  }, [performSearch]);
 
   const handleTypeChange = (type) => {
     setCurrentType(type);
@@ -87,9 +87,7 @@ export default function SearchResults() {
   return (
     <>
       <Head>
-        <title>
-          Search Results for &quot;{query}&quot; - Veflix
-        </title>
+        <title>Search Results for &quot;{query}&quot; - Veflix</title>
       </Head>
       <Header />
 

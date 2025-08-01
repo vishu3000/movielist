@@ -678,4 +678,6 @@ class TMDBApi {
   }
 }
 
-export default new TMDBApi();
+const tmdbApi = new TMDBApi();
+
+export default tmdbApi;

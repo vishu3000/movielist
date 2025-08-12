@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Head from "next/head";
 import TMDBApi from "../../../services/tmdbApi";
 import {
   Header,
@@ -56,67 +57,196 @@ const TVDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#141414] flex items-center justify-center">
-        <div className="text-white text-xl">Loading TV show details...</div>
-      </div>
+      <>
+        <Head>
+          <title>Loading... | Veflix</title>
+        </Head>
+        <div className="min-h-screen bg-[#141414] flex items-center justify-center">
+          <div className="text-white text-xl">Loading TV show details...</div>
+        </div>
+      </>
     );
   }
 
   if (error || !tvShow) {
     return (
-      <div className="min-h-screen bg-[#141414] flex flex-col items-center justify-center">
-        <div className="text-white text-xl mb-4">
-          {error || "TV Show not found"}
+      <>
+        <Head>
+          <title>TV Show Not Found | Veflix</title>
+          <meta
+            name="description"
+            content="The requested TV show could not be found."
+          />
+        </Head>
+        <div className="min-h-screen bg-[#141414] flex flex-col items-center justify-center">
+          <div className="text-white text-xl mb-4">
+            {error || "TV Show not found"}
+          </div>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg"
+          >
+            Back to Home
+          </button>
         </div>
-        <button
-          onClick={() => router.push("/")}
-          className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg"
-        >
-          Back to Home
-        </button>
-      </div>
+      </>
     );
   }
 
+  // Generate JSON-LD schema for the TV series
+  const generateTVSeriesSchema = (tvShow) => {
+    if (!tvShow) return null;
+
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "TVSeries",
+      name: tvShow.name,
+      description: tvShow.overview,
+      image: tvShow.poster_path
+        ? `https://image.tmdb.org/t/p/original${tvShow.poster_path}`
+        : null,
+      datePublished: tvShow.first_air_date,
+      dateModified: tvShow.last_air_date,
+      numberOfSeasons: tvShow.number_of_seasons,
+      numberOfEpisodes: tvShow.number_of_episodes,
+      genre: tvShow.genres?.map((genre) => genre.name) || [],
+      aggregateRating: tvShow.vote_average
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: tvShow.vote_average,
+            ratingCount: tvShow.vote_count,
+            bestRating: 10,
+            worstRating: 0,
+          }
+        : null,
+      actor:
+        tvShow.cast?.slice(0, 10).map((person) => ({
+          "@type": "Person",
+          name: person.name,
+          url: `/person/${person.id}`,
+        })) || [],
+      creator:
+        tvShow.created_by?.map((person) => ({
+          "@type": "Person",
+          name: person.name,
+        })) || [],
+      productionCompany:
+        tvShow.production_companies?.map((company) => ({
+          "@type": "Organization",
+          name: company.name,
+        })) || [],
+      countryOfOrigin:
+        tvShow.production_countries?.map((country) => country.name) || [],
+      language: tvShow.spoken_languages?.map((lang) => lang.name) || [],
+      contentRating: tvShow.adult ? "R" : "PG",
+      url: `/tvdetails/${tvShow.id}`,
+      inLanguage: "en",
+    };
+
+    return schema;
+  };
+
   return (
-    <div className="min-h-screen bg-black">
-      <Header />
+    <>
+      <Head>
+        <title>
+          {tvShow.name} ({tvShow.first_air_date?.split("-")[0]}) | Veflix
+        </title>
+        <meta
+          name="description"
+          content={`${tvShow.overview || `Watch ${tvShow.name} online.`} ${
+            tvShow.number_of_seasons
+              ? `${tvShow.number_of_seasons} season${
+                  tvShow.number_of_seasons > 1 ? "s" : ""
+                }.`
+              : ""
+          } ${tvShow.vote_average ? `Rating: ${tvShow.vote_average}/10.` : ""}`}
+        />
+        <meta
+          name="keywords"
+          content={`${tvShow.name}, TV show, series, ${
+            tvShow.genres?.map((g) => g.name).join(", ") || ""
+          }, streaming, Veflix`}
+        />
+        <meta
+          property="og:title"
+          content={`${tvShow.name} (${
+            tvShow.first_air_date?.split("-")[0]
+          }) | Veflix`}
+        />
+        <meta
+          property="og:description"
+          content={tvShow.overview || `Watch ${tvShow.name} online.`}
+        />
+        <meta property="og:type" content="video.tv_show" />
+        {tvShow.poster_path && (
+          <meta
+            property="og:image"
+            content={`https://image.tmdb.org/t/p/w500${tvShow.poster_path}`}
+          />
+        )}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content={`${tvShow.name} (${
+            tvShow.first_air_date?.split("-")[0]
+          }) | Veflix`}
+        />
+        <meta
+          name="twitter:description"
+          content={tvShow.overview || `Watch ${tvShow.name} online.`}
+        />
+        {/* JSON-LD TVSeries Schema */}
+        {tvShow && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(generateTVSeriesSchema(tvShow)),
+            }}
+          />
+        )}
+      </Head>
+      <div className="min-h-screen bg-black">
+        <Header />
 
-      <MovieHero movie={tvShow} onTrailerClick={openTrailerModal} />
+        <MovieHero movie={tvShow} onTrailerClick={openTrailerModal} />
 
-      {/* Cast Section */}
-      {tvShow.cast && tvShow.cast.length > 0 && (
-        <div className="px-8 py-16 max-w-7xl mx-auto">
-          <Cast cast={tvShow.cast} horizontal={true} />
-        </div>
-      )}
+        {/* Cast Section */}
+        {tvShow.cast && tvShow.cast.length > 0 && (
+          <div className="px-8 py-16 max-w-7xl mx-auto">
+            <Cast cast={tvShow.cast} horizontal={true} />
+          </div>
+        )}
 
-      {/* Seasons Section */}
-      {tvShow.seasons && tvShow.seasons.length > 0 && (
-        <Seasons tvShow={tvShow} msid={msid} />
-      )}
+        {/* Seasons Section */}
+        {tvShow.seasons && tvShow.seasons.length > 0 && (
+          <Seasons tvShow={tvShow} msid={msid} />
+        )}
 
-      {/* TV Show Details Table Section */}
-      <MovieDetailsTable tvShow={tvShow} />
+        {/* TV Show Details Table Section */}
+        <MovieDetailsTable tvShow={tvShow} />
 
-      {/* Streaming Providers Section */}
-      {tvShow.streamingProviders && tvShow.streamingProviders.available && (
-        <div className="px-8 py-4 max-w-7xl mx-auto">
-          <StreamingProviders streamingProviders={tvShow.streamingProviders} />
-        </div>
-      )}
+        {/* Streaming Providers Section */}
+        {tvShow.streamingProviders && tvShow.streamingProviders.available && (
+          <div className="px-8 py-4 max-w-7xl mx-auto">
+            <StreamingProviders
+              streamingProviders={tvShow.streamingProviders}
+            />
+          </div>
+        )}
 
-      {/* More Like This Grid Section */}
-      <MoreLikeThis movies={tvShow.moreLikeThis} />
+        {/* More Like This Grid Section */}
+        <MoreLikeThis movies={tvShow.moreLikeThis} />
 
-      {/* Trailer Modal */}
-      <TrailerModal
-        isOpen={isTrailerModalOpen}
-        onClose={closeTrailerModal}
-        trailerUrl={tvShow?.trailer}
-        movieTitle={tvShow?.title}
-      />
-    </div>
+        {/* Trailer Modal */}
+        <TrailerModal
+          isOpen={isTrailerModalOpen}
+          onClose={closeTrailerModal}
+          trailerUrl={tvShow?.trailer}
+          movieTitle={tvShow?.title}
+        />
+      </div>
+    </>
   );
 };
 

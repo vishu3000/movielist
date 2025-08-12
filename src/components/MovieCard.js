@@ -4,6 +4,7 @@ import {
   getTMDBImageUrl,
   getImageProps,
 } from "../../config/imageConfig";
+import { toFiveScale } from "../lib/utils";
 
 export default function MovieCard({
   movie, // New prop structure
@@ -15,12 +16,13 @@ export default function MovieCard({
   progress = null,
   badge = null,
   forList = false,
+  rating = null,
 }) {
   // Handle both old and new prop structures
   const movieTitle = movie?.title || title;
   const movieImage = movie?.poster || image;
   const movieYear = movie?.year;
-  const movieRating = movie?.rating;
+  const movieRating = movie?.rating || rating;
   const mediaType = movie?.mediaType;
 
   const imageSize = forList ? "SMALL" : "MEDIUM";
@@ -33,6 +35,9 @@ export default function MovieCard({
         IMAGE_CONFIG.SIZES[imageType][imageSize]
       )
     : null;
+
+  const rating5 = toFiveScale(movieRating);
+  const starCount = Math.round(rating5);
 
   return (
     <div className="relative group cursor-pointer transition-transform duration-200 hover:scale-105">
@@ -63,8 +68,7 @@ export default function MovieCard({
               {movieTitle}
             </span>
           </div>
-        )}
-
+        )}{" "}
         {/* Hover Title Overlay */}
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30">
           <div className="text-center px-2">
@@ -73,26 +77,40 @@ export default function MovieCard({
             </h3>
             {movieYear && <p className="text-gray-300 text-xs">{movieYear}</p>}
             {movieRating && (
-              <p className="text-yellow-400 text-xs">⭐ {movieRating}</p>
+              <div
+                className="flex items-center justify-center gap-0.5 text-xs"
+                aria-label={`Rating: ${movieRating}`}
+              >
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={
+                      i < starCount ? "text-yellow-400" : "text-gray-500"
+                    }
+                  >
+                    ★
+                  </span>
+                ))}
+                <span className="ml-1 text-yellow-200">
+                  {rating5.toFixed(1)}
+                </span>
+              </div>
             )}
             {mediaType && (
               <p className="text-blue-400 text-xs capitalize">{mediaType}</p>
             )}
           </div>
         </div>
-
         {/* Veflix Logo */}
         <div className="absolute top-2 left-2 z-20">
           <div className="text-red-600 text-2xl font-bold">V</div>
         </div>
-
         {/* Media Type Badge */}
         {mediaType && (
           <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1 rounded z-20">
             {mediaType.toUpperCase()}
           </div>
         )}
-
         {/* Recently Added Indicator */}
         {isRecentlyAdded && (
           <div className="absolute top-8 right-2 bg-green-600 text-white text-xs px-1 rounded z-20">

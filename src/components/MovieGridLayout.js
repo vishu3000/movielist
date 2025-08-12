@@ -46,7 +46,7 @@ export default function MovieGridLayout({
           <div key={`${movie.id}-${movie.title}`} className="group">
             <Link href={`/${platform}details/${movie.id}`}>
               <MovieCard
-                title={movie.title || movie.original_title}
+                title={movie.title || movie.original_title || movie.name}
                 image={movie.poster_path || movie.backdrop_path}
                 forList={true}
                 isRecentlyAdded={

@@ -9,6 +9,7 @@ export default function SearchBar() {
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchType, setSearchType] = useState("multi"); // 'multi', 'movie', 'tv'
+  const [validation, setValidation] = useState("");
   const searchRef = useRef(null);
   const router = useRouter();
 
@@ -26,7 +27,9 @@ export default function SearchBar() {
 
   // Search function with debouncing
   const performSearch = useCallback(async () => {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -84,10 +87,15 @@ export default function SearchBar() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query)}&type=${searchType}`);
-      setIsOpen(false);
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setValidation("Please enter at least 2 characters");
+      setIsOpen(true);
+      return;
     }
+    setValidation("");
+    router.push(`/search?q=${encodeURIComponent(trimmed)}&type=${searchType}`);
+    setIsOpen(false);
   };
 
   return (
@@ -121,18 +129,35 @@ export default function SearchBar() {
               <input
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (validation) setValidation("");
+                }}
                 placeholder="Search movies, TV shows..."
-                className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-600 focus:outline-none focus:border-blue-500"
+                className={`flex-1 bg-gray-800 text-white px-3 py-2 rounded-md border ${
+                  validation
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-600 focus:border-red-500"
+                } focus:outline-none`}
                 autoFocus
               />
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors"
               >
                 Search
               </button>
             </div>
+
+            {validation && (
+              <div
+                className="mt-1 text-red-400 text-sm"
+                role="alert"
+                aria-live="polite"
+              >
+                {validation}
+              </div>
+            )}
 
             {/* Search Type Tabs */}
             <div className="flex space-x-1 mb-3">
@@ -147,7 +172,7 @@ export default function SearchBar() {
                   onClick={() => setSearchType(type.key)}
                   className={`px-3 py-1 rounded text-sm transition-colors ${
                     searchType === type.key
-                      ? "bg-blue-600 text-white"
+                      ? "bg-red-600 text-white"
                       : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                   }`}
                 >
@@ -161,7 +186,7 @@ export default function SearchBar() {
           <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
               <div className="p-4 text-center text-gray-400">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
                 <p className="mt-2">Searching...</p>
               </div>
             ) : results.length > 0 ? (

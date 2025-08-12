@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import tmdbApi from "../../services/tmdbApi";
 import { Header, MovieGridLayout } from "@/components";
+import Head from "next/head";
 
 export default function MovieHub() {
-  const [activeTab, setActiveTab] = useState("popular");
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -94,39 +95,70 @@ export default function MovieHub() {
   };
 
   return (
-    <div>
-      <Header />
-      <div className="container mx-auto px-4 py-8 mt-16">
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2 md:gap-4 border-b border-gray-700">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`px-4 py-2 text-sm md:text-base font-medium rounded-t-lg transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "bg-red-600 text-white border-b-2 border-red-600"
-                    : "text-gray-400 hover:text-white hover:bg-gray-700"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+    <>
+      <Head>
+        <title>Movie Hub - Browse Movies | Veflix</title>
+        <meta
+          name="description"
+          content="Explore movies by category: upcoming releases, top-rated films, popular movies, and now playing. Find your next favorite movie on Veflix."
+        />
+        <meta
+          name="keywords"
+          content="movies, upcoming movies, top rated movies, popular movies, now playing, Veflix"
+        />
+        <meta
+          property="og:title"
+          content="Movie Hub - Browse Movies | Veflix"
+        />
+        <meta
+          property="og:description"
+          content="Explore movies by category: upcoming releases, top-rated films, popular movies, and now playing."
+        />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content="Movie Hub - Browse Movies | Veflix"
+        />
+        <meta
+          name="twitter:description"
+          content="Explore movies by category on Veflix."
+        />
+      </Head>
+      <div>
+        <Header />
+        <div className="container mx-auto px-4 py-8 mt-16">
+          {/* Tab Navigation */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-2 md:gap-4 border-b border-gray-700">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`px-4 py-2 text-sm md:text-base font-medium rounded-t-lg transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "bg-red-600 text-white border-b-2 border-red-600"
+                      : "text-gray-400 hover:text-white hover:bg-gray-700"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div>
+            <MovieGridLayout
+              movies={movies}
+              isLoading={isLoading}
+              error={error}
+              isLoadingMore={isLoadingMore}
+              platform="movie"
+            />
           </div>
         </div>
-
-        {/* Content Area */}
-        <div>
-          <MovieGridLayout
-            movies={movies}
-            isLoading={isLoading}
-            error={error}
-            isLoadingMore={isLoadingMore}
-            platform="movie"
-          />
-        </div>
       </div>
-    </div>
+    </>
   );
 }

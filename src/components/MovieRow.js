@@ -32,7 +32,11 @@ export default function MovieRow({ title, url, type = "movie" }) {
           `${url}?api_key=${process.env.NEXT_PUBLIC_MOVIE_API_KEY}&language=en-US&page=1`
         );
         let data = await response.json();
-        data.results = data.results.slice(0, 10);
+
+        // Shuffle the results array before slicing
+        const shuffledResults = data.results.sort(() => Math.random() - 0.5);
+        data.results = shuffledResults.slice(0, 12);
+
         setItems(data.results);
         setIsLoading(false);
       } catch (err) {
@@ -74,7 +78,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
 
   // Get the correct title and link based on content type
   const getItemTitle = (item) => {
-    return type === "tv" ? item.name : item.original_title;
+    return type === "tv" ? item.name : item.title;
   };
 
   const getItemLink = (item) => {
@@ -92,7 +96,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
   return (
     <div className="mb-8">
       <div
-        className="relative flex px-4 md:px-8 cursor-pointer"
+        className="relative flex px-4 md:px-8 cursor-pointer justify-between"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -103,11 +107,9 @@ export default function MovieRow({ title, url, type = "movie" }) {
         {/* Explore All Link */}
         <Link
           href={`/movielist?category=${trim(title)}&platform=${type}`}
-          className={`text-md font-semibold text-blue-400 hover:text-blue-300  transition-all duration-300 ease-in-out transform ${
-            isHovered ? "translate-x-4 opacity-100" : "translate-x-0 opacity-0"
-          }`}
+          className={`left-0 text-sm font-semibold text-blue-400 transition-all duration-300 ease-in-out transform hover:text-blue-300`}
         >
-          Explore all &gt;
+          Explore More
         </Link>
       </div>
       <div className="relative px-4 md:px-8">
@@ -180,6 +182,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
                             msid={item.id}
                             title={getItemTitle(item)}
                             image={modifiedPoster(item.backdrop_path)}
+                            rating={item.vote_average}
                           />
                         </Link>
                       </div>

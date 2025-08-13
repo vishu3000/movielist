@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import tmdbApi from "../../services/tmdbApi";
 import { Header, MovieGridLayout } from "@/components";
+import Head from "next/head";
 
 export default function TVSeriesHub() {
-  const [activeTab, setActiveTab] = useState("popular");
+  const [activeTab, setActiveTab] = useState("airing_today");
   const [tvShows, setTvShows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -94,39 +95,70 @@ export default function TVSeriesHub() {
   };
 
   return (
-    <div>
-      <Header />
-      <div className="container mx-auto px-4 py-8 mt-16">
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2 md:gap-4 border-b border-gray-700">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`px-4 py-2 text-sm md:text-base font-medium rounded-t-lg transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "bg-red-600 text-white border-b-2 border-red-600"
-                    : "text-gray-400 hover:text-white hover:bg-gray-700"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+    <>
+      <Head>
+        <title>TV Series Hub - Browse TV Shows | Veflix</title>
+        <meta
+          name="description"
+          content="Discover TV series by category: airing today, top-rated shows, popular series, and currently on air. Find your next binge-worthy show on Veflix."
+        />
+        <meta
+          name="keywords"
+          content="TV shows, TV series, airing today, top rated TV shows, popular TV series, on air, Veflix"
+        />
+        <meta
+          property="og:title"
+          content="TV Series Hub - Browse TV Shows | Veflix"
+        />
+        <meta
+          property="og:description"
+          content="Discover TV series by category: airing today, top-rated shows, popular series, and currently on air."
+        />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content="TV Series Hub - Browse TV Shows | Veflix"
+        />
+        <meta
+          name="twitter:description"
+          content="Discover TV series by category on Veflix."
+        />
+      </Head>
+      <div>
+        <Header />
+        <div className="container mx-auto px-4 py-8 mt-16">
+          {/* Tab Navigation */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-2 md:gap-4 border-b border-gray-700">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`px-4 py-2 text-sm md:text-base font-medium rounded-t-lg transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "bg-red-600 text-white border-b-2 border-red-600"
+                      : "text-gray-400 hover:text-white hover:bg-gray-700"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div>
+            <MovieGridLayout
+              movies={tvShows}
+              isLoading={isLoading}
+              error={error}
+              isLoadingMore={isLoadingMore}
+              platform="tv"
+            />
           </div>
         </div>
-
-        {/* Content Area */}
-        <div>
-          <MovieGridLayout
-            movies={tvShows}
-            isLoading={isLoading}
-            error={error}
-            isLoadingMore={isLoadingMore}
-            platform="tv"
-          />
-        </div>
       </div>
-    </div>
+    </>
   );
 }

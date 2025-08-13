@@ -67,6 +67,46 @@ export default function SearchResults() {
     }
   };
 
+  // Generate JSON-LD schema for search results
+  const generateSearchResultsSchema = (query, results, searchType) => {
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "SearchResultsPage",
+      name: `Search Results for "${query}"`,
+      description: `Search results for "${query}" in ${
+        searchType === "movie"
+          ? "movies"
+          : searchType === "tv"
+          ? "TV shows"
+          : "movies and TV shows"
+      }`,
+      url: `/search?q=${encodeURIComponent(query)}&type=${searchType}`,
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: results.length,
+        itemListElement: results.slice(0, 10).map((result, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": result.media_type === "movie" ? "Movie" : "TVSeries",
+            name: result.title || result.name,
+            description: result.overview,
+            image: result.poster_path
+              ? `https://image.tmdb.org/t/p/w500${result.poster_path}`
+              : null,
+            datePublished: result.release_date || result.first_air_date,
+            url:
+              result.media_type === "movie"
+                ? `/moviedetails/${result.id}`
+                : `/tvdetails/${result.id}`,
+          },
+        })),
+      },
+    };
+
+    return schema;
+  };
+
   if (!query) {
     return (
       <>
@@ -88,6 +128,17 @@ export default function SearchResults() {
     <>
       <Head>
         <title>Search Results for &quot;{query}&quot; - Veflix</title>
+        {/* JSON-LD Search Results Schema */}
+        {query && results.length > 0 && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                generateSearchResultsSchema(query, results, currentType)
+              ),
+            }}
+          />
+        )}
       </Head>
       <Header />
 
@@ -110,7 +161,7 @@ export default function SearchResults() {
                 onClick={() => handleTypeChange(type.key)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   currentType === type.key
-                    ? "bg-blue-600 text-white"
+                    ? "bg-red-600 text-white"
                     : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                 }`}
               >
@@ -123,7 +174,7 @@ export default function SearchResults() {
         {/* Results */}
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
             <span className="ml-4 text-gray-400">Searching...</span>
           </div>
         ) : results.length > 0 ? (
@@ -183,7 +234,7 @@ export default function SearchResults() {
             <div className="flex justify-center space-x-4">
               <button
                 onClick={() => router.push("/moviehub")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
               >
                 Browse Movies
               </button>

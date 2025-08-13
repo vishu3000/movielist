@@ -15,22 +15,24 @@ export default function Header() {
       <div className="flex items-center justify-between px-4 md:px-8">
         {/* Veflix Logo */}
         <div className="flex items-center">
-          <Image
-            src="/veflix.png"
-            alt="Veflix"
-            className="h-20 mr-8"
-            width={100}
-            height={100}
-          />
+          <Link href="/">
+            <Image
+              src="/veflix.png"
+              alt="Veflix"
+              className="h-20 mr-8"
+              width={100}
+              height={100}
+            />
+          </Link>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex space-x-6 text-sm font-bold">
-            <Link
+            {/* <Link
               href="/"
               className="text-gray-300 hover:text-gray-400 transition-colors"
             >
               Home
-            </Link>
+            </Link> */}
             <Link
               href="/moviehub"
               className="text-gray-300 hover:text-gray-400 transition-colors"

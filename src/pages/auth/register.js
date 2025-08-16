@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Image from "next/image";
@@ -27,6 +26,7 @@ export default function Register() {
     setIsLoading(true);
     setError("");
 
+    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
@@ -40,13 +40,30 @@ export default function Register() {
     }
 
     try {
-      // In a real app, you'd make an API call to register the user
-      // For demo purposes, we'll just redirect to login
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      // Redirect to login page
       router.push(
         "/auth/login?message=Registration successful! Please sign in."
       );
     } catch (error) {
-      setError("An error occurred during registration");
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -66,10 +83,10 @@ export default function Register() {
           />
         </div>
 
-        {/* Register Form */}
+        {/* Registration Form */}
         <div className="bg-black/75 backdrop-blur-sm rounded-lg p-8 border border-gray-800">
           <h2 className="text-3xl font-bold text-white mb-6 text-center">
-            Sign Up
+            Create Account
           </h2>
 
           {error && (

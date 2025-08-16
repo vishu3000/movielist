@@ -6,6 +6,26 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = process.env.NEXT_PUBLIC_MOVIE_API_KEY;
 
 class TMDBApi {
+  constructor(accessToken = null) {
+    this.accessToken = accessToken;
+  }
+
+  // Helper method to get headers with authentication
+  getHeaders() {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.accessToken) {
+      headers["Authorization"] = `Bearer ${this.accessToken}`;
+    } else if (API_KEY) {
+      // Fallback to API key if no access token
+      return { api_key: API_KEY };
+    }
+
+    return headers;
+  }
+
   // Fetch movie details by ID
   async getMovieById(movieId) {
     try {
@@ -675,6 +695,90 @@ class TMDBApi {
         (video) => video.type === "Trailer" && video.site === "YouTube"
       ),
     };
+  }
+
+  // Add method to get user's watchlist
+  async getUserWatchlist(accountId, page = 1) {
+    if (!this.accessToken) {
+      throw new Error("Authentication required for user-specific data");
+    }
+
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/account/${accountId}/watchlist/movies?page=${page}`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.results || [];
+    } catch (error) {
+      console.error("Error fetching user watchlist:", error);
+      return [];
+    }
+  }
+
+  // Add method to get user's favorite movies
+  async getUserFavorites(accountId, page = 1) {
+    if (!this.accessToken) {
+      throw new Error("Authentication required for user-specific data");
+    }
+
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/account/${accountId}/favorite/movies?page=${page}`,
+        {
+          headers: this.getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.results || [];
+    } catch (error) {
+      console.error("Error fetching user favorites:", error);
+      return [];
+    }
+  }
+
+  // Add method to add/remove movie from favorites
+  async toggleFavorite(accountId, mediaType, mediaId, favorite) {
+    if (!this.accessToken) {
+      throw new Error("Authentication required for user-specific data");
+    }
+
+    try {
+      const response = await fetch(
+        `${TMDB_BASE_URL}/account/${accountId}/favorite`,
+        {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify({
+            media_type: mediaType,
+            media_id: mediaId,
+            favorite: favorite,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.success || false;
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      return false;
+    }
   }
 }
 

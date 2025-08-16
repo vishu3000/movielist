@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,8 +8,20 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    // Check for success message from registration
+    const { message: urlMessage } = router.query;
+    if (urlMessage) {
+      setMessage(urlMessage);
+    }
+  }, [router.query]);
+
+  // Remove the providers state and useEffect - we'll handle this differently
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,6 +66,12 @@ export default function Login() {
           <h2 className="text-3xl font-bold text-white mb-6 text-center">
             Sign In
           </h2>
+
+          {message && (
+            <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded mb-4">
+              {message}
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded mb-4">
@@ -129,25 +147,12 @@ export default function Login() {
               Password: password123
             </p>
           </div>
+
+          {/* Remove TMDB OAuth Button section */}
+
+          {/* Remove the divider and "Or continue with" text */}
         </div>
       </div>
     </div>
   );
-}
-
-export async function getServerSideProps(context) {
-  const session = await getSession(context);
-
-  if (session) {
-    return {
-      redirect: {
-        destination: "/",
-        permanent: false,
-      },
-    };
-  }
-
-  return {
-    props: {},
-  };
 }

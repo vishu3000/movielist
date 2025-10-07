@@ -10,7 +10,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
   const [prevClickCount, setPrevClickCount] = useState(0);
   const [nextClickCount, setNextClickCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const itemsPerSlide = 6; // Number of items to show per slide
+  const itemsPerSlide = 5; // Number of items to show per slide
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -169,7 +169,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
           >
             {Array.from({ length: totalSlides }).map((_, slideIndex) => (
               <div key={slideIndex} className="w-full flex-shrink-0">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-0.5 pb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-20 pb-4">
                   {items
                     .slice(
                       slideIndex * itemsPerSlide,

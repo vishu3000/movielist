@@ -1,17 +1,64 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import Link from "next/link";
+import MovieCard from "../components/MovieCard";
 
 export default function Profile() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  const [watchlist, setWatchlist] = useState([]);
+  const [wlLoading, setWlLoading] = useState(true);
+  const [wlError, setWlError] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/login");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    const loadWatchlist = async () => {
+      if (status !== "authenticated") return;
+      try {
+        setWlLoading(true);
+        const res = await fetch("/api/watchlist");
+        if (!res.ok) {
+          throw new Error("Failed to load watchlist");
+        }
+        const data = await res.json();
+        setWatchlist(Array.isArray(data.items) ? data.items : []);
+      } catch (e) {
+        setWlError(e);
+      } finally {
+        setWlLoading(false);
+      }
+    };
+    loadWatchlist();
+  }, [status]);
+
+  const handleRemove = async (item) => {
+    // optimistic update
+    const prev = watchlist;
+    setWatchlist((w) => w.filter((i) => i.id !== item.id));
+    try {
+      const params = new URLSearchParams({
+        tmdbId: String(item.tmdbId),
+        mediaType: item.mediaType,
+      });
+      const res = await fetch(`/api/watchlist?${params.toString()}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to remove");
+      }
+    } catch (e) {
+      // revert on error
+      setWatchlist(prev);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -32,7 +79,7 @@ export default function Profile() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-8">My Profile</h1>
 
-          <div className="bg-black/75 backdrop-blur-sm rounded-lg p-8 border border-gray-800">
+          <div className="bg-black/75 backdrop-blur-sm rounded-lg p-8 border border-gray-800 min-w-[max-content]">
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-white mb-4">
@@ -58,24 +105,53 @@ export default function Profile() {
                 <h2 className="text-xl font-semibold text-white mb-4">
                   My Watchlist
                 </h2>
-                <div className="bg-gray-800/50 rounded-lg p-6 text-center">
-                  <p className="text-gray-400">Your watchlist is empty</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Start adding movies and TV shows to your personal collection
-                  </p>
-                </div>
-              </div>
 
-              <div>
-                <h2 className="text-xl font-semibold text-white mb-4">
-                  Recently Watched
-                </h2>
-                <div className="bg-gray-800/50 rounded-lg p-6 text-center">
-                  <p className="text-gray-400">No recently watched content</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Your viewing history will appear here
-                  </p>
-                </div>
+                {wlLoading && (
+                  <div className="bg-gray-800/50 rounded-lg p-6 text-center">
+                    <p className="text-gray-400">Loading your watchlist...</p>
+                  </div>
+                )}
+
+                {wlError && !wlLoading && (
+                  <div className="bg-gray-800/50 rounded-lg p-6 text-center">
+                    <p className="text-red-400">Failed to load watchlist.</p>
+                  </div>
+                )}
+
+                {!wlLoading && !wlError && watchlist.length === 0 && (
+                  <div className="bg-gray-800/50 rounded-lg p-6 text-center">
+                    <p className="text-gray-400">Your watchlist is empty</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Start adding movies and TV shows to your personal
+                      collection
+                    </p>
+                  </div>
+                )}
+
+                {!wlLoading && !wlError && watchlist.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
+                    {watchlist.map((item) => {
+                      const href =
+                        item.mediaType === "tv"
+                          ? `/tvdetails/${item.tmdbId}`
+                          : `/moviedetails/${item.tmdbId}`;
+                      const movie = {
+                        title: item.title,
+                        poster: item.poster || item.backdrop || null,
+                        mediaType: item.mediaType,
+                      };
+                      return (
+                        <Link key={item.id} href={href}>
+                          <MovieCard
+                            movie={movie}
+                            forList
+                            onRemove={() => handleRemove(item)}
+                          />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

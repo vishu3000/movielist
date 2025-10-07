@@ -17,6 +17,7 @@ export default function MovieCard({
   badge = null,
   forList = false,
   rating = null,
+  onRemove = null,
 }) {
   // Handle both old and new prop structures
   const movieTitle = movie?.title || title;
@@ -101,16 +102,26 @@ export default function MovieCard({
             )}
           </div>
         </div>
+        {/* Remove (Cross) Button for Watchlist */}
+        {forList && typeof onRemove === "function" && (
+          <div className="absolute top-2 right-2 z-40">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove(e);
+              }}
+              aria-label="Remove from watchlist"
+              className="bg-black/70 hover:bg-black/90 text-white w-7 h-7 rounded-full flex items-center justify-center"
+            >
+              <span className="text-sm leading-none">×</span>
+            </button>
+          </div>
+        )}
         {/* Veflix Logo */}
         <div className="absolute top-2 left-2 z-20">
           <div className="text-red-600 text-2xl font-bold">V</div>
         </div>
-        {/* Media Type Badge */}
-        {mediaType && (
-          <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1 rounded z-20">
-            {mediaType.toUpperCase()}
-          </div>
-        )}
         {/* Recently Added Indicator */}
         {isRecentlyAdded && (
           <div className="absolute top-8 right-2 bg-green-600 text-white text-xs px-1 rounded z-20">

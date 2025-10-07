@@ -1,7 +1,62 @@
 import Image from "next/image";
 import { Genre } from "../index";
+import { useEffect, useState } from "react";
 
 const MovieHero = ({ movie, onTrailerClick }) => {
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch("/api/watchlist");
+        if (!res.ok) return;
+        const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        const exists = items.some(
+          (i) => i.tmdbId === String(movie.id) && i.mediaType === "movie"
+        );
+        if (!cancelled) setAdded(exists);
+      } catch (_) {
+        // ignore
+      }
+    };
+    if (movie?.id) check();
+    return () => {
+      cancelled = true;
+    };
+  }, [movie?.id]);
+
+  const handleAddToList = async () => {
+    if (adding || added) return;
+    setAdding(true);
+    try {
+      const res = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tmdbId: movie.id,
+          mediaType: "movie",
+          title: movie.title,
+          poster: movie.poster,
+          backdrop: movie.backdrop,
+        }),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/auth/login";
+        return;
+      }
+      if (!res.ok) throw new Error("Failed to add to list");
+      setAdded(true);
+    } catch (e) {
+      alert("Failed to add to list. Please try again.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <div className="relative">
       {/* Background Image */}
@@ -48,8 +103,6 @@ const MovieHero = ({ movie, onTrailerClick }) => {
 
             {/* Action Buttons - Moved below poster */}
             <div className="flex gap-4 mt-4">
-              {/* Play Button */}
-
               {/* Trailer Button */}
               {movie.trailer && (
                 <button
@@ -66,6 +119,15 @@ const MovieHero = ({ movie, onTrailerClick }) => {
                   Trailer
                 </button>
               )}
+              <button
+                onClick={handleAddToList}
+                disabled={adding || added}
+                className={`${
+                  added ? "bg-gray-600" : "bg-red-600 hover:bg-red-700"
+                } text-white font-bold py-4 px-12 rounded-lg text-xl flex items-center gap-3 transition-colors disabled:opacity-70`}
+              >
+                {added ? "Added" : adding ? "Adding..." : "Add to List"}
+              </button>
             </div>
           </div>
 

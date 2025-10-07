@@ -52,13 +52,15 @@ export default function Login() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Image
+          <Link href="/">
+            <Image
             src="/veflix.png"
             alt="Veflix"
-            width={120}
-            height={120}
-            className="mx-auto"
-          />
+              width={120}
+              height={120}
+              className="mx-auto"
+            />
+          </Link>
         </div>
 
         {/* Login Form */}

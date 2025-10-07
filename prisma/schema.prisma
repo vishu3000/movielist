@@ -48,6 +48,7 @@ model User {
   sessions      Session[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  watchlist     WatchlistItem[] // user’s “My list”
 }
 
 model VerificationToken {
@@ -57,4 +58,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model WatchlistItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  tmdbId    String
+  mediaType String   // "movie" | "tv"
+  title     String
+  poster    String?
+  backdrop  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tmdbId, mediaType])
 }

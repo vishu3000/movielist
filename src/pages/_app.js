@@ -1,5 +1,7 @@
+// /Users/vishu/movielist/src/pages/_app.js
 import "@/styles/globals.css";
 import { SessionProvider } from "next-auth/react";
+import { UserAgentProvider } from "@/context/UserAgentContext";
 
 export default function App({
   Component,
@@ -7,7 +9,9 @@ export default function App({
 }) {
   return (
     <SessionProvider session={session}>
-      <Component {...pageProps} />
+      <UserAgentProvider initial={pageProps?.userAgent ?? null}>
+        <Component {...pageProps} />
+      </UserAgentProvider>
     </SessionProvider>
   );
 }

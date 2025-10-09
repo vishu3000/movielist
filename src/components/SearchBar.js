@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import tmdbApi from "../services/tmdbApi";
 
-export default function SearchBar() {
+export default function SearchBar({ isMobile }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -99,7 +99,7 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="relative" ref={searchRef}>
+   <div className={`relative ${isMobile ? "w-full md:w-auto" : ""}`} ref={searchRef}>
       {/* Search Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -123,7 +123,11 @@ export default function SearchBar() {
 
       {/* Search Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-[#141414] border border-gray-700 rounded-lg shadow-xl z-50">
+        <div className={` mt-2 bg-[#141414] border border-gray-700 rounded-lg shadow-xl z-50 ${
+          isMobile 
+            ? "fixed ml-2 mr-2 left-0 right-0" 
+            : "absolute right-0 w-96"
+        }`}>
           <form onSubmit={handleSearchSubmit} className="p-4">
             <div className="flex items-center space-x-2 mb-3">
               <input

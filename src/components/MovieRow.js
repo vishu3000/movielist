@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import MovieCard from "./MovieCard";
 import Link from "next/link";
 
-export default function MovieRow({ title, url, type = "movie" }) {
+export default function MovieRow({
+  title,
+  url,
+  type = "movie",
+  isMobile = false,
+}) {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,105 +99,155 @@ export default function MovieRow({ title, url, type = "movie" }) {
     );
 
   return (
-    <div className="mb-8">
-      <div
-        className="relative flex px-4 md:px-8 cursor-pointer justify-between"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <Link href={`/movielist?category=${trim(title)}&platform=${type}`}>
-          <h2 className="text-white text-xl font-semibold mb-4">{title}</h2>
-        </Link>
-
-        {/* Explore All Link */}
-        <Link
-          href={`/movielist?category=${trim(title)}&platform=${type}`}
-          className={`left-0 text-sm font-semibold text-blue-400 transition-all duration-300 ease-in-out transform hover:text-blue-300`}
-        >
-          Explore More
-        </Link>
-      </div>
-      <div className="relative px-4 md:px-8">
-        {/* Navigation Buttons */}
-        {totalSlides > 1 && (
-          <>
-            {nextClickCount > 0 && (
-              <button
-                onClick={prevSlide}
-                className="absolute left-0.5  transform  z-10 bg-black/50 hover:bg-black/70 text-white h-32 md:h-40 w-8 rounded-md transition-all duration-200 flex items-center justify-center cursor-pointer"
-                aria-label="Previous items"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-            )}
-            {nextClickCount < totalSlides - 1 && (
-              <button
-                onClick={nextSlide}
-                className="absolute right-0.5 transform  z-10 bg-black/50 hover:bg-black/70 text-white h-32 md:h-40 w-8 rounded-md transition-all duration-200 flex items-center justify-center cursor-pointer"
-                aria-label="Next items"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            )}
-          </>
-        )}
-
-        {/* Carousel Container */}
-        <div className="overflow-hidden">
+    <>
+      {!isMobile && (
+        <div className="mb-8">
           <div
-            className="flex transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            className="relative flex px-4 md:px-8 cursor-pointer justify-between"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
-            {Array.from({ length: totalSlides }).map((_, slideIndex) => (
-              <div key={slideIndex} className="w-full flex-shrink-0">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-20 pb-4">
-                  {items
-                    .slice(
-                      slideIndex * itemsPerSlide,
-                      (slideIndex + 1) * itemsPerSlide
-                    )
-                    .map((item, index) => (
-                      <div key={slideIndex * itemsPerSlide + index}>
-                        <Link href={getItemLink(item)}>
-                          <MovieCard
-                            msid={item.id}
-                            title={getItemTitle(item)}
-                            image={modifiedPoster(item.backdrop_path)}
-                            rating={item.vote_average}
-                          />
-                        </Link>
-                      </div>
-                    ))}
-                </div>
+            <Link href={`/movielist?category=${trim(title)}&platform=${type}`}>
+              <h2 className="text-white text-xl font-semibold mb-4">{title}</h2>
+            </Link>
+
+            {/* Explore All Link */}
+            <Link
+              href={`/movielist?category=${trim(title)}&platform=${type}`}
+              className={`left-0 text-sm font-semibold text-blue-400 transition-all duration-300 ease-in-out transform hover:text-blue-300`}
+            >
+              Explore More
+            </Link>
+          </div>
+          <div className="relative px-4 md:px-8">
+            {/* Navigation Buttons */}
+            {totalSlides > 1 && (
+              <>
+                {nextClickCount > 0 && (
+                  <button
+                    onClick={prevSlide}
+                    className="absolute left-0.5  transform  z-10 bg-black/50 hover:bg-black/70 text-white h-32 md:h-40 w-8 rounded-md transition-all duration-200 flex items-center justify-center cursor-pointer"
+                    aria-label="Previous items"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                )}
+                {nextClickCount < totalSlides - 1 && (
+                  <button
+                    onClick={nextSlide}
+                    className="absolute right-0.5 transform  z-10 bg-black/50 hover:bg-black/70 text-white h-32 md:h-40 w-8 rounded-md transition-all duration-200 flex items-center justify-center cursor-pointer"
+                    aria-label="Next items"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Carousel Container */}
+            <div className="overflow-hidden">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              >
+                {Array.from({ length: totalSlides }).map((_, slideIndex) => (
+                  <div key={slideIndex} className="w-full flex-shrink-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-20 pb-4">
+                      {items
+                        .slice(
+                          slideIndex * itemsPerSlide,
+                          (slideIndex + 1) * itemsPerSlide
+                        )
+                        .map((item, index) => (
+                          <div key={slideIndex * itemsPerSlide + index}>
+                            <Link href={getItemLink(item)}>
+                              <MovieCard
+                                msid={item.id}
+                                title={getItemTitle(item)}
+                                image={modifiedPoster(item.backdrop_path)}
+                                rating={item.vote_average}
+                              />
+                            </Link>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+      {isMobile && (
+        <div className="mb-8 px-4 md:px-8">
+          <div className="relative flex px-4 md:px-8 cursor-pointer justify-between overflow-hidden">
+            <Link href={`/movielist?category=${trim(title)}&platform=${type}`}>
+              <h2 className="text-white text-xl font-semibold mb-4">{title}</h2>
+              {/* <ul className="flex overflow-auto flex-nowrap">
+                {items.map((item) => (
+                  <li key={item.id} className="">
+                    <Link href={getItemLink(item)}>
+                      <MovieCard
+                        title={getItemTitle(item)}
+                        image={modifiedPoster(item.backdrop_path)}
+                        rating={item.vote_average}
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul> */}
+              <div
+                className="overflow-x-auto touch-pan-x -mx-4 px-4 snap-x snap-mandatory scroll-smooth"
+                style={{ WebkitOverflowScrolling: "touch" }}
+                role="list"
+                aria-label="Movie items"
+              >
+                <ul className="flex gap-4 w-max">
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      className="snap-start flex-shrink-0 w-48 sm:w-56 md:w-64 p-2"
+                    >
+                      <Link href={getItemLink(item)}>
+                        <MovieCard
+                          msid={item.id}
+                          title={getItemTitle(item)}
+                          image={modifiedPoster(item.backdrop_path)}
+                          rating={item.vote_average}
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

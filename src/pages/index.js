@@ -1,8 +1,9 @@
 import { movieApiConfig } from "../../config/apiConfig";
 import { Header, MovieGrid } from "../components";
+import { userAgentFromCookies } from "@/lib/userAgentSSR";
 import Head from "next/head";
 
-export default function Home() {
+export default function Home({ userAgent }) {
   const { movieRows, tvRows } = movieApiConfig;
 
   // Combine movie and TV rows with type indicators
@@ -11,6 +12,7 @@ export default function Home() {
     ...tvRows.map((row) => ({ ...row, type: "tv" })),
   ];
 
+  const isMobile = userAgent.device === "mobile";
   // JSON-LD Schema for the home page
   const websiteSchema = {
     "@context": "https://schema.org",
@@ -81,9 +83,14 @@ export default function Home() {
         />
       </Head>
       <div className="min-h-screen bg-[#141414]">
-        <Header />
-        <MovieGrid rows={allRows} />
+        <Header isMobile={isMobile} />
+        <MovieGrid rows={allRows} isMobile={isMobile} />
       </div>
     </>
   );
+}
+
+export async function getServerSideProps(ctx) {
+  const userAgent = userAgentFromCookies(ctx.req);
+  return { props: { userAgent } };
 }

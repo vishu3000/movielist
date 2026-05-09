@@ -44,11 +44,15 @@ export default function MovieCard({
     <div className="relative group cursor-pointer transition-transform duration-200 hover:scale-105">
       {/* Movie Thumbnail */}
       <div
-        className="relative bg-gray-800 rounded overflow-hidden"
-        style={{
-          width: `${IMAGE_CONFIG.SIZES[imageType][imageSize].width}px`,
-          height: `${IMAGE_CONFIG.SIZES[imageType][imageSize].height}px`,
-        }}
+        className={`relative bg-gray-800 rounded overflow-hidden${forList ? " w-full aspect-[2/3]" : ""}`}
+        style={
+          forList
+            ? undefined
+            : {
+                width: `${IMAGE_CONFIG.SIZES[imageType][imageSize].width}px`,
+                height: `${IMAGE_CONFIG.SIZES[imageType][imageSize].height}px`,
+              }
+        }
       >
         {/* Background Image */}
         {cardImageUrl ? (
@@ -56,7 +60,7 @@ export default function MovieCard({
             <Image
               src={cardImageUrl}
               alt={movieTitle}
-              {...imageProps}
+              {...(forList ? { fill: true } : imageProps)}
               className="object-cover"
               loading="lazy"
               placeholder="blur"

@@ -21,6 +21,20 @@ const TVDetails = () => {
   const [error, setError] = useState(null);
   const [isTrailerModalOpen, setIsTrailerModalOpen] = useState(false);
 
+  const handleTrailerClick = () => {
+    setIsTrailerModalOpen(true);
+    fetch("/api/trailerHistory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tmdbId: String(tvShow.id),
+        mediaType: "tv",
+        title: tvShow.title,
+        poster: tvShow.poster ?? null,
+      }),
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     const fetchTVShow = async () => {
       if (!msid) return;
@@ -125,7 +139,7 @@ const TVDetails = () => {
       <div className="min-h-screen bg-black">
         <Header />
 
-        <MovieHero movie={tvShow} onTrailerClick={() => setIsTrailerModalOpen(true)} />
+        <MovieHero movie={tvShow} onTrailerClick={handleTrailerClick} />
 
         <div className="border-t border-white/[0.04]" />
 

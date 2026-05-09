@@ -97,6 +97,58 @@ function BookmarkIcon() {
   );
 }
 
+function PlayIcon({ className = "w-5 h-5" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
+      />
+    </svg>
+  );
+}
+
+function EmptyTrailerHistory() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-2">
+        <PlayIcon className="w-8 h-8 text-gray-500" />
+      </div>
+      <h3 className="text-lg font-semibold text-white">No trailers watched yet</h3>
+      <p className="text-gray-400 text-sm text-center max-w-xs">
+        Play trailers on movie and TV show pages to build your watch history.
+      </p>
+      <Link
+        href="/"
+        className="mt-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200 cursor-pointer"
+      >
+        Browse Content
+      </Link>
+    </div>
+  );
+}
+
+function timeAgo(date) {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  return new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 function EmptyWatchlist() {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -150,6 +202,10 @@ export default function Profile() {
   const [wlLoading, setWlLoading] = useState(true);
   const [wlError, setWlError] = useState(null);
 
+  const [trailerHistory, setTrailerHistory] = useState([]);
+  const [thLoading, setThLoading] = useState(true);
+  const [thError, setThError] = useState(null);
+
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editImage, setEditImage] = useState(null); // base64 data URI or null
@@ -179,6 +235,35 @@ export default function Profile() {
     };
     loadWatchlist();
   }, [status]);
+
+  useEffect(() => {
+    const loadTrailerHistory = async () => {
+      if (status !== "authenticated") return;
+      try {
+        setThLoading(true);
+        const res = await fetch("/api/trailerHistory");
+        if (!res.ok) throw new Error("Failed to load trailer history");
+        const data = await res.json();
+        setTrailerHistory(Array.isArray(data.items) ? data.items : []);
+      } catch (e) {
+        setThError(e);
+      } finally {
+        setThLoading(false);
+      }
+    };
+    loadTrailerHistory();
+  }, [status]);
+
+  const handleClearHistory = async () => {
+    const prev = trailerHistory;
+    setTrailerHistory([]);
+    try {
+      const res = await fetch("/api/trailerHistory", { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to clear history");
+    } catch {
+      setTrailerHistory(prev);
+    }
+  };
 
   const handleRemove = async (item) => {
     const prev = watchlist;
@@ -463,6 +548,80 @@ export default function Profile() {
                     onRemove={() => handleRemove(item)}
                   />
                 </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Divider ── */}
+      <div className="border-t border-white/5 mx-4 md:mx-8" />
+
+      {/* ── Recently Watched Trailers ── */}
+      <div className="px-4 md:px-8 py-10 max-w-5xl mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <PlayIcon className="w-5 h-5 text-rose-500" />
+          <h2 className="text-xl font-bold text-white">Recently Watched</h2>
+          {!thLoading && !thError && trailerHistory.length > 0 && (
+            <>
+              <span className="ml-1 text-sm text-gray-500">
+                {trailerHistory.length} trailer{trailerHistory.length !== 1 ? "s" : ""}
+              </span>
+              <button
+                onClick={handleClearHistory}
+                className="ml-auto text-xs text-gray-600 hover:text-rose-400 transition-colors duration-200 cursor-pointer"
+              >
+                Clear history
+              </button>
+            </>
+          )}
+        </div>
+
+        {thLoading && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[2/3] rounded-lg bg-white/5 animate-pulse"
+              />
+            ))}
+          </div>
+        )}
+
+        {thError && !thLoading && (
+          <div className="flex flex-col items-center py-16 gap-3 text-center">
+            <p className="text-rose-400 font-semibold">Failed to load trailer history</p>
+            <p className="text-gray-500 text-sm">Please try refreshing the page.</p>
+          </div>
+        )}
+
+        {!thLoading && !thError && trailerHistory.length === 0 && <EmptyTrailerHistory />}
+
+        {!thLoading && !thError && trailerHistory.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+            {trailerHistory.map((item) => {
+              const href =
+                item.mediaType === "tv"
+                  ? `/tvdetails/${item.tmdbId}`
+                  : `/moviedetails/${item.tmdbId}`;
+              const movie = {
+                title: item.title,
+                poster: item.poster || null,
+                mediaType: item.mediaType,
+              };
+              return (
+                <div key={item.id} className="relative group">
+                  <Link href={href}>
+                    <MovieCard movie={movie} forList />
+                  </Link>
+                  {/* Play badge overlay */}
+                  <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <PlayIcon className="w-3 h-3 text-rose-400" />
+                    <span className="text-[10px] text-rose-300 font-medium leading-none">
+                      {timeAgo(item.watchedAt)}
+                    </span>
+                  </div>
+                </div>
               );
             })}
           </div>

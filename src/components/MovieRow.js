@@ -72,7 +72,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
 
   if (isLoading) {
     return (
-      <div className="mb-12 px-4 md:px-12">
+      <div className="mb-6 px-4 md:px-12">
         {/* Skeleton header */}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-1 h-6 bg-gray-700 rounded-full" />
@@ -98,7 +98,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="mb-12 group/row">
+    <div className="mb-6 group/row">
       {/* Row header */}
       <div className="flex items-center justify-between px-4 md:px-12 mb-4">
         <div className="flex items-center gap-3">
@@ -111,7 +111,7 @@ export default function MovieRow({ title, url, type = "movie" }) {
             href={`/movielist?category=${trim(title)}&platform=${type}`}
             className="group/title flex items-center gap-2"
           >
-            <h2 className="text-white text-lg md:text-xl font-bold tracking-wide">{title}</h2>
+            <h2 className="text-white text-xl md:text-2xl font-bold tracking-wide">{title}</h2>
             <span
               className="text-xs font-semibold opacity-0 group-hover/title:opacity-100 transition-all duration-200 flex items-center gap-0.5"
               style={{ color: cfg.accent }}

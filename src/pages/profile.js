@@ -614,8 +614,26 @@ export default function Profile() {
                   <Link href={href}>
                     <MovieCard movie={movie} forList />
                   </Link>
-                  {/* Play badge overlay */}
-                  <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {/* Status badge — always visible */}
+                  <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                    {item.completed ? (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-sm">
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-[9px] text-white font-semibold leading-none tracking-wide">WATCHED</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/90 backdrop-blur-sm">
+                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7L8 5z" />
+                        </svg>
+                        <span className="text-[9px] text-white font-semibold leading-none tracking-wide">CONTINUE</span>
+                      </span>
+                    )}
+                  </div>
+                  {/* Time ago — on hover */}
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <PlayIcon className="w-3 h-3 text-rose-400" />
                     <span className="text-[10px] text-rose-300 font-medium leading-none">
                       {timeAgo(item.watchedAt)}

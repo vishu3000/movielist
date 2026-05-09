@@ -1,6 +1,7 @@
 import { movieApiConfig } from "../../config/apiConfig";
 import { Header, MovieGrid } from "../components";
 import HomepageHero from "../components/ui/HomepageHero";
+import ContinueWatchingCarousel from "../components/ui/ContinueWatchingCarousel";
 import Head from "next/head";
 
 export async function getServerSideProps() {
@@ -90,6 +91,9 @@ export default function Home({ heroMovies }) {
 
         {/* Full-viewport hero with trending feature */}
         <HomepageHero movies={heroMovies} />
+
+        {/* Continue Watching — only shown to logged-in users with incomplete trailers */}
+        <ContinueWatchingCarousel />
 
         {/* Content rows */}
         <MovieGrid rows={allRows} />

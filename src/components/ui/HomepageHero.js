@@ -9,28 +9,9 @@ const GENRE_MAP = {
   878: "Sci-Fi", 10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western",
 };
 
-export default function HomepageHero() {
-  const [movies, setMovies] = useState([]);
+export default function HomepageHero({ movies = [] }) {
   const [current, setCurrent] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
-
-  useEffect(() => {
-    const fetchTrending = async () => {
-      try {
-        const res = await fetch(
-          `https://api.themoviedb.org/3/trending/movie/day?api_key=${process.env.NEXT_PUBLIC_MOVIE_API_KEY}&language=en-US`
-        );
-        const data = await res.json();
-        setMovies(data.results?.slice(0, 5) || []);
-      } catch {
-        // silently fail — hero just won't render
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTrending();
-  }, []);
 
   const next = useCallback(() => {
     setImageLoaded(false);
@@ -43,23 +24,6 @@ export default function HomepageHero() {
     return () => clearInterval(timer);
   }, [movies.length, next]);
 
-  if (loading) {
-    return (
-      <div className="relative h-[90vh] min-h-[560px] bg-black">
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800 animate-pulse" />
-        <div className="absolute bottom-32 left-8 md:left-16 space-y-4">
-          <div className="h-12 w-80 bg-gray-700 rounded animate-pulse" />
-          <div className="h-4 w-96 bg-gray-700 rounded animate-pulse" />
-          <div className="h-4 w-72 bg-gray-700 rounded animate-pulse" />
-          <div className="flex gap-3 mt-6">
-            <div className="h-12 w-32 bg-gray-700 rounded animate-pulse" />
-            <div className="h-12 w-32 bg-gray-700 rounded animate-pulse" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (movies.length === 0) return null;
 
   const movie = movies[current];
@@ -67,7 +31,7 @@ export default function HomepageHero() {
   const year = movie.release_date?.slice(0, 4);
   const genres = movie.genre_ids?.slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean) || [];
   const backdropUrl = movie.backdrop_path
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+    ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
     : null;
 
   return (

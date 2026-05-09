@@ -3,7 +3,19 @@ import { Header, MovieGrid } from "../components";
 import HomepageHero from "../components/ui/HomepageHero";
 import Head from "next/head";
 
-export default function Home() {
+export async function getServerSideProps() {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/trending/movie/day?api_key=${process.env.NEXT_PUBLIC_MOVIE_API_KEY}&language=en-US`
+    );
+    const data = await res.json();
+    return { props: { heroMovies: data.results?.slice(0, 5) ?? [] } };
+  } catch {
+    return { props: { heroMovies: [] } };
+  }
+}
+
+export default function Home({ heroMovies }) {
   const { movieRows, tvRows } = movieApiConfig;
 
   const allRows = [
@@ -77,7 +89,7 @@ export default function Home() {
         <Header />
 
         {/* Full-viewport hero with trending feature */}
-        <HomepageHero />
+        <HomepageHero movies={heroMovies} />
 
         {/* Content rows */}
         <MovieGrid rows={allRows} />

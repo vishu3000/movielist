@@ -9,6 +9,8 @@ export default function Document() {
           name="google-site-verification"
           content="pQH2VBMFygWO9jNz_BqI7Fmk-OjZKryRJ3o5mnhB5uk"
         />
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="preconnect" href="https://api.themoviedb.org" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin />
         <link

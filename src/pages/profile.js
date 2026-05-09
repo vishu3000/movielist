@@ -5,7 +5,24 @@ import Header from "../components/Header";
 import Link from "next/link";
 import MovieCard from "../components/MovieCard";
 
-function Avatar({ name, size = "lg" }) {
+function Avatar({ name, image, size = "lg" }) {
+  const sizeClass =
+    size === "lg" ? "w-24 h-24 text-3xl" : "w-10 h-10 text-base";
+
+  if (image) {
+    return (
+      <div
+        className={`${sizeClass} rounded-full overflow-hidden ring-4 ring-rose-600/30 flex-shrink-0`}
+      >
+        <img
+          src={image}
+          alt={name ?? "Profile photo"}
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
   const initials = name
     ? name
         .split(" ")
@@ -14,13 +31,10 @@ function Avatar({ name, size = "lg" }) {
         .join("")
         .toUpperCase()
     : "?";
-  const sizeClass =
-    size === "lg"
-      ? "w-24 h-24 text-3xl"
-      : "w-10 h-10 text-base";
+
   return (
     <div
-      className={`${sizeClass} rounded-full bg-gradient-to-br from-rose-600 to-rose-900 flex items-center justify-center font-bold text-white select-none ring-4 ring-rose-600/30`}
+      className={`${sizeClass} rounded-full bg-gradient-to-br from-rose-600 to-rose-900 flex items-center justify-center font-bold text-white select-none ring-4 ring-rose-600/30 flex-shrink-0`}
     >
       {initials}
     </div>
@@ -175,7 +189,7 @@ export default function Profile() {
 
         <div className="relative max-w-5xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
-            <Avatar name={session.user.name} size="lg" />
+            <Avatar name={session.user.name} image={session.user.image} size="lg" />
 
             <div className="flex-1 text-center sm:text-left">
               <p className="text-xs uppercase tracking-widest text-rose-400 font-semibold mb-1">

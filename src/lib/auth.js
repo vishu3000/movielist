@@ -63,26 +63,31 @@ export const authOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user, account }) {
-      // Initial sign in
+    async jwt({ token, user, account, trigger, session }) {
+      // Initial sign in — seed token from the user object
       if (account && user) {
         return {
           ...token,
           id: user.id,
+          name: user.name ?? token.name,
+          image: user.image ?? null,
         };
       }
 
-      // Return previous token if the access token has not expired yet
-      if (Date.now() < token.accessTokenExpires) {
+      // Client called update({ name, image }) — refresh token fields
+      if (trigger === "update" && session) {
+        if (session.name !== undefined) token.name = session.name;
+        if (session.image !== undefined) token.image = session.image;
         return token;
       }
 
-      // Access token has expired, try to update it
-      return refreshAccessToken(token);
+      return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.image = token.image ?? null;
       }
       return session;
     },

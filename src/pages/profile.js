@@ -4,8 +4,32 @@ import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Link from "next/link";
 import MovieCard from "../components/MovieCard";
+import {
+  IconPencil,
+  IconCamera,
+  IconCheck,
+  IconX,
+  IconLoader2,
+} from "@tabler/icons-react";
 
-function Avatar({ name, size = "lg" }) {
+function Avatar({ name, image, size = "lg" }) {
+  const sizeClass =
+    size === "lg" ? "w-24 h-24 text-3xl" : "w-10 h-10 text-base";
+
+  if (image) {
+    return (
+      <div
+        className={`${sizeClass} rounded-full overflow-hidden ring-4 ring-rose-600/30 flex-shrink-0`}
+      >
+        <img
+          src={image}
+          alt={name ?? "Profile photo"}
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
   const initials = name
     ? name
         .split(" ")
@@ -14,13 +38,10 @@ function Avatar({ name, size = "lg" }) {
         .join("")
         .toUpperCase()
     : "?";
-  const sizeClass =
-    size === "lg"
-      ? "w-24 h-24 text-3xl"
-      : "w-10 h-10 text-base";
+
   return (
     <div
-      className={`${sizeClass} rounded-full bg-gradient-to-br from-rose-600 to-rose-900 flex items-center justify-center font-bold text-white select-none ring-4 ring-rose-600/30`}
+      className={`${sizeClass} rounded-full bg-gradient-to-br from-rose-600 to-rose-900 flex items-center justify-center font-bold text-white select-none ring-4 ring-rose-600/30 flex-shrink-0`}
     >
       {initials}
     </div>
@@ -96,13 +117,44 @@ function EmptyWatchlist() {
   );
 }
 
+function resizeImageToDataURL(file, maxPx = 200, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new globalThis.Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = maxPx;
+        canvas.height = maxPx;
+        const ctx = canvas.getContext("2d");
+        // Crop to square from center before scaling
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, maxPx, maxPx);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function Profile() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
 
   const [watchlist, setWatchlist] = useState([]);
   const [wlLoading, setWlLoading] = useState(true);
   const [wlError, setWlError] = useState(null);
+
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState(null); // base64 data URI or null
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -145,6 +197,71 @@ export default function Profile() {
     }
   };
 
+  const handleEditStart = () => {
+    setEditName(session.user.name ?? "");
+    setEditImage(null);
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setEditing(false);
+    setEditName("");
+    setEditImage(null);
+    setSaveError(null);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveError("Image too large, please choose a smaller file.");
+      return;
+    }
+    setSaveError(null);
+    try {
+      const dataUrl = await resizeImageToDataURL(file);
+      setEditImage(dataUrl);
+    } catch {
+      setSaveError("Could not process image, please try another file.");
+    }
+  };
+
+  const handleSave = async () => {
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      setSaveError("Name cannot be empty.");
+      return;
+    }
+    if (trimmedName.length > 60) {
+      setSaveError("Name must be 60 characters or fewer.");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const body = { name: trimmedName };
+      if (editImage !== null) body.image = editImage;
+      const res = await fetch("/api/user/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message ?? "Failed to save changes");
+      }
+      const updated = await res.json();
+      await update({ name: updated.name, image: updated.image });
+      setEditing(false);
+      setEditImage(null);
+    } catch (e) {
+      setSaveError(e.message ?? "Failed to save changes, please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -175,25 +292,111 @@ export default function Profile() {
 
         <div className="relative max-w-5xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
-            <Avatar name={session.user.name} size="lg" />
+            {/* Avatar — clickable overlay in edit mode */}
+            <div className="relative group flex-shrink-0">
+              <Avatar
+                name={editing ? editName : session.user.name}
+                image={editing ? (editImage ?? session.user.image) : session.user.image}
+                size="lg"
+              />
+              {editing && (
+                <>
+                  <label
+                    htmlFor="avatar-upload"
+                    className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    aria-label="Change profile photo"
+                  >
+                    <IconCamera className="w-6 h-6 text-white" />
+                    <span className="text-xs text-white font-medium">Change</span>
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleFileChange}
+                  />
+                </>
+              )}
+            </div>
 
-            <div className="flex-1 text-center sm:text-left">
+            {/* Name + email — or edit form */}
+            <div className="flex-1 text-center sm:text-left min-w-0">
               <p className="text-xs uppercase tracking-widest text-rose-400 font-semibold mb-1">
                 Member
               </p>
-              <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
-                {session.user.name}
-              </h1>
-              <p className="text-gray-400 text-sm mt-1">{session.user.email}</p>
+
+              {editing ? (
+                <div>
+                  <label htmlFor="edit-name" className="sr-only">
+                    Display name
+                  </label>
+                  <input
+                    id="edit-name"
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    maxLength={60}
+                    autoFocus
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                  />
+                  {saveError && (
+                    <p className="text-rose-400 text-sm mt-1" role="alert">
+                      {saveError}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors duration-200 cursor-pointer"
+                    >
+                      {saving ? (
+                        <IconLoader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <IconCheck className="w-4 h-4" />
+                      )}
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-4 py-2 border border-white/10 hover:border-white/30 text-gray-400 hover:text-white text-sm rounded-lg transition-all duration-200 cursor-pointer"
+                    >
+                      <IconX className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                      {session.user.name}
+                    </h1>
+                    <button
+                      onClick={handleEditStart}
+                      aria-label="Edit profile"
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-all duration-200 cursor-pointer"
+                    >
+                      <IconPencil className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-1">{session.user.email}</p>
+                </>
+              )}
             </div>
 
-            <button
-              onClick={() => signOut({ callbackUrl: "/auth/login" })}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/30 text-sm transition-all duration-200 cursor-pointer"
-            >
-              <SignOutIcon />
-              Sign out
-            </button>
+            {/* Sign out — hidden during edit mode */}
+            {!editing && (
+              <button
+                onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/30 text-sm transition-all duration-200 cursor-pointer"
+              >
+                <SignOutIcon />
+                Sign out
+              </button>
+            )}
           </div>
 
           {/* Stats row */}

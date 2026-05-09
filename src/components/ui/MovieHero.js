@@ -5,6 +5,13 @@ import { useEffect, useState } from "react";
 const MovieHero = ({ movie, onTrailerClick }) => {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -18,14 +25,10 @@ const MovieHero = ({ movie, onTrailerClick }) => {
           (i) => i.tmdbId === String(movie.id) && i.mediaType === "movie"
         );
         if (!cancelled) setAdded(exists);
-      } catch (_) {
-        // ignore
-      }
+      } catch (_) {}
     };
     if (movie?.id) check();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [movie?.id]);
 
   const handleAddToList = async () => {
@@ -43,136 +46,160 @@ const MovieHero = ({ movie, onTrailerClick }) => {
           backdrop: movie.backdrop,
         }),
       });
-
-      if (res.status === 401) {
-        window.location.href = "/auth/login";
-        return;
-      }
-      if (!res.ok) throw new Error("Failed to add to list");
+      if (res.status === 401) { window.location.href = "/auth/login"; return; }
+      if (!res.ok) throw new Error("Failed");
       setAdded(true);
-    } catch (e) {
+    } catch {
       alert("Failed to add to list. Please try again.");
     } finally {
       setAdding(false);
     }
   };
 
+  const score = movie.rating_score;
+  const scoreColor =
+    score >= 7.5 ? "text-green-400" : score >= 6 ? "text-yellow-400" : "text-red-400";
+
   return (
-    <div className="relative">
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <div className="w-full h-[700px] bg-gradient-to-t from-black via-black/60 to-transparent">
-          <div
-            className="w-full h-full bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: movie.backdrop
-                ? `linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%), url('${movie.backdrop}')`
-                : `linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%), url('https://images.unsplash.com/photo-1489599077428-c3a6370a4837?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`,
-            }}
+    <div className="relative w-full">
+      {/* Backdrop */}
+      <div className="relative w-full h-[85vh] min-h-[560px] max-h-[900px] overflow-hidden">
+        {movie.backdrop ? (
+          <img
+            src={movie.backdrop}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover object-top"
           />
-        </div>
-      </div>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black" />
+        )}
 
-      {/* Content */}
-      <div className="relative z-10 pt-32 pb-16 px-8 max-w-7xl mx-auto">
-        <div className="flex items-start gap-8">
-          {/* Movie Poster */}
-          <div className="flex-shrink-0">
-            <div className="w-80 h-auto bg-gray-800 rounded-lg overflow-hidden shadow-2xl">
-              {movie.poster ? (
-                <Image
-                  src={movie.poster}
-                  alt={movie.title}
-                  width={320}
-                  height={480}
-                  className="w-full h-auto object-cover"
-                  priority
-                />
-              ) : (
-                <div className="aspect-[2/3] bg-gray-700 flex items-center justify-center text-gray-400">
-                  <svg
-                    className="w-20 h-20"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-                  </svg>
-                </div>
-              )}
+        {/* Gradient overlays - cinematic */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex items-end">
+          <div className="w-full max-w-7xl mx-auto px-6 md:px-10 pb-16 md:pb-20 flex gap-10 items-end">
+            {/* Poster — hidden on mobile */}
+            <div className="hidden lg:block flex-shrink-0">
+              <div className="w-52 xl:w-60 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                {movie.poster ? (
+                  <Image
+                    src={movie.poster}
+                    alt={movie.title}
+                    width={240}
+                    height={360}
+                    className="w-full h-auto object-cover"
+                    priority
+                  />
+                ) : (
+                  <div className="aspect-[2/3] bg-gray-800 flex items-center justify-center">
+                    <svg className="w-16 h-16 text-gray-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Action Buttons - Moved below poster */}
-            <div className="flex gap-4 mt-4">
-              {/* Trailer Button */}
-              {movie.trailer && (
-                <button
-                  onClick={onTrailerClick}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-12 rounded-lg text-xl flex items-center gap-3 transition-colors"
-                >
-                  <svg
-                    className="w-8 h-8"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M10 8.64L15.27 12 10 15.36V8.64M8 5v14l11-7L8 5z" />
-                  </svg>
-                  Trailer
-                </button>
-              )}
-              <button
-                onClick={handleAddToList}
-                disabled={adding || added}
-                className={`${
-                  added ? "bg-gray-600" : "bg-red-600 hover:bg-red-700"
-                } text-white font-bold py-4 px-12 rounded-lg text-xl flex items-center gap-3 transition-colors disabled:opacity-70`}
-              >
-                {added ? "Added" : adding ? "Adding..." : "Add to List"}
-              </button>
-            </div>
-          </div>
+            {/* Info */}
+            <div className="flex-1 min-w-0 pb-1">
+              {/* Title */}
+              <h1 className="text-white font-bold leading-tight mb-3 text-4xl md:text-5xl xl:text-6xl drop-shadow-lg">
+                {movie.title}
+              </h1>
 
-          {/* Movie Info */}
-          <div className="flex-1 pt-8">
-            {/* Title */}
-            <h1 className="text-white text-6xl font-bold mb-6 leading-tight">
-              {movie.title}
-            </h1>
-
-            {/* Metadata */}
-            <div className="flex items-center gap-4 mb-6 text-white">
-              <span className="text-lg">{movie.year}</span>
-              <span className="border border-gray-400 px-2 py-1 text-sm">
-                {movie.rating}
-              </span>
-              <span className="text-lg">{movie.duration}</span>
-              <span className="border border-gray-400 px-2 py-1 text-sm font-bold">
-                {movie.quality}
-              </span>
-              {movie.rating_score > 0 && (
-                <div className="flex items-center gap-1">
-                  <svg
-                    className="w-5 h-5 text-yellow-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="text-lg">
-                    {movie.rating_score.toFixed(1)}
+              {/* Metadata row */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                {movie.year && (
+                  <span className="text-gray-300 text-sm font-medium">{movie.year}</span>
+                )}
+                {movie.rating && (
+                  <span className="border border-gray-500 text-gray-300 text-xs px-2 py-0.5 rounded font-medium tracking-wide">
+                    {movie.rating}
                   </span>
-                </div>
+                )}
+                {movie.duration && (
+                  <span className="text-gray-300 text-sm">{movie.duration}</span>
+                )}
+                {score > 0 && (
+                  <span className={`flex items-center gap-1 text-sm font-semibold ${scoreColor}`}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    {score.toFixed(1)}
+                  </span>
+                )}
+                {movie.quality && (
+                  <span className="bg-white/10 text-white text-xs px-2 py-0.5 rounded font-bold tracking-widest">
+                    {movie.quality}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              {movie.description && (
+                <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-2xl mb-5 line-clamp-3">
+                  {movie.description}
+                </p>
               )}
-            </div>
 
-            {/* Description */}
-            <div className="mb-6">
-              <p className="text-white text-xl leading-relaxed max-w-4xl">
-                {movie.description}
-              </p>
-            </div>
+              {/* Genres */}
+              <div className="mb-6">
+                <Genre genres={movie.genres} />
+              </div>
 
-            {/* Genres */}
-            <Genre genres={movie.genres} />
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-3">
+                {movie.trailer && (
+                  <button
+                    onClick={onTrailerClick}
+                    className="flex items-center gap-2 bg-white hover:bg-gray-200 text-black font-bold px-6 py-3 rounded-lg text-sm transition-all duration-200 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    Play Trailer
+                  </button>
+                )}
+                <button
+                  onClick={handleAddToList}
+                  disabled={adding || added}
+                  className={`flex items-center gap-2 font-bold px-6 py-3 rounded-lg text-sm transition-all duration-200 cursor-pointer border ${
+                    added
+                      ? "bg-white/10 border-white/30 text-white"
+                      : "bg-transparent border-white/50 text-white hover:bg-white/10 hover:border-white"
+                  } disabled:opacity-60`}
+                >
+                  {added ? (
+                    <>
+                      <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      In My List
+                    </>
+                  ) : adding ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                      </svg>
+                      My List
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

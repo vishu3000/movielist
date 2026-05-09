@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Link from "next/link";
 import MovieCard from "../components/MovieCard";
+import {
+  IconPencil,
+  IconCamera,
+  IconCheck,
+  IconX,
+  IconLoader2,
+} from "@tabler/icons-react";
 
 function Avatar({ name, image, size = "lg" }) {
   const sizeClass =
@@ -110,13 +117,44 @@ function EmptyWatchlist() {
   );
 }
 
+function resizeImageToDataURL(file, maxPx = 200, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new globalThis.Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = maxPx;
+        canvas.height = maxPx;
+        const ctx = canvas.getContext("2d");
+        // Crop to square from center before scaling
+        const min = Math.min(img.width, img.height);
+        const sx = (img.width - min) / 2;
+        const sy = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, maxPx, maxPx);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function Profile() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
 
   const [watchlist, setWatchlist] = useState([]);
   const [wlLoading, setWlLoading] = useState(true);
   const [wlError, setWlError] = useState(null);
+
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState(null); // base64 data URI or null
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -156,6 +194,71 @@ export default function Profile() {
       if (!res.ok) throw new Error("Failed to remove");
     } catch {
       setWatchlist(prev);
+    }
+  };
+
+  const handleEditStart = () => {
+    setEditName(session.user.name ?? "");
+    setEditImage(null);
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setEditing(false);
+    setEditName("");
+    setEditImage(null);
+    setSaveError(null);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveError("Image too large, please choose a smaller file.");
+      return;
+    }
+    setSaveError(null);
+    try {
+      const dataUrl = await resizeImageToDataURL(file);
+      setEditImage(dataUrl);
+    } catch {
+      setSaveError("Could not process image, please try another file.");
+    }
+  };
+
+  const handleSave = async () => {
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      setSaveError("Name cannot be empty.");
+      return;
+    }
+    if (trimmedName.length > 60) {
+      setSaveError("Name must be 60 characters or fewer.");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const body = { name: trimmedName };
+      if (editImage !== null) body.image = editImage;
+      const res = await fetch("/api/user/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message ?? "Failed to save changes");
+      }
+      const updated = await res.json();
+      await update({ name: updated.name, image: updated.image });
+      setEditing(false);
+      setEditImage(null);
+    } catch (e) {
+      setSaveError(e.message ?? "Failed to save changes, please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 

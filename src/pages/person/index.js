@@ -5,15 +5,15 @@ import Head from "next/head";
 import { Header } from "../../components";
 import { getTMDBImageUrl, IMAGE_CONFIG } from "../../../config/imageConfig";
 import { useRouter } from "next/router";
-import tmdbApi from "../../services/tmdbApi"; // adjust path if needed
+import tmdbApi from "../../services/tmdbApi";
 import { KnownFor } from "../../components";
 
 export default function PersonPage() {
   const router = useRouter();
   const { id } = router.query;
-
   const [personData, setPersonData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -27,18 +27,19 @@ export default function PersonPage() {
   if (isLoading || !personData) {
     return (
       <>
-        <Head>
-          <title>Loading... | Veflix</title>
-        </Head>
-        <div className="min-h-screen bg-[#141414] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-600"></div>
+        <Head><title>Loading... | Veflix</title></Head>
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full border-2 border-red-600 border-t-transparent animate-spin" />
+            <p className="text-gray-500 text-sm">Loading...</p>
+          </div>
         </div>
       </>
     );
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return "Unknown";
+    if (!dateString) return null;
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -51,333 +52,204 @@ export default function PersonPage() {
     const birthDate = new Date(birthday);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
   };
 
   const getGenderText = (gender) => {
-    switch (gender) {
-      case 1:
-        return "Female";
-      case 2:
-        return "Male";
-      default:
-        return "Not specified";
-    }
+    if (gender === 1) return "Female";
+    if (gender === 2) return "Male";
+    return null;
   };
 
-  // Generate JSON-LD schema for the person
-  const generatePersonSchema = (personData) => {
-    if (!personData) return null;
+  const generatePersonSchema = (p) => ({
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: p.name,
+    description: p.biography,
+    image: p.profile_path ? `https://image.tmdb.org/t/p/original${p.profile_path}` : null,
+    birthDate: p.birthday,
+    birthPlace: p.place_of_birth ? { "@type": "Place", name: p.place_of_birth } : null,
+    gender: getGenderText(p.gender),
+    jobTitle: p.known_for_department,
+    url: `/person/${p.id}`,
+    sameAs: p.imdb_id ? `https://www.imdb.com/name/${p.imdb_id}` : null,
+    homepage: p.homepage,
+    alternateName: p.also_known_as || [],
+  });
 
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Person",
-      name: personData.name,
-      description: personData.biography,
-      image: personData.profile_path
-        ? `https://image.tmdb.org/t/p/original${personData.profile_path}`
-        : null,
-      birthDate: personData.birthday,
-      birthPlace: personData.place_of_birth
-        ? {
-            "@type": "Place",
-            name: personData.place_of_birth,
-          }
-        : null,
-      gender:
-        personData.gender === 1
-          ? "Female"
-          : personData.gender === 2
-          ? "Male"
-          : null,
-      jobTitle: personData.known_for_department,
-      url: `/person/${personData.id}`,
-      sameAs: personData.imdb_id
-        ? `https://www.imdb.com/name/${personData.imdb_id}`
-        : null,
-      homepage: personData.homepage,
-      alternateName: personData.also_known_as || [],
-    };
+  const age = getAge(personData.birthday);
+  const gender = getGenderText(personData.gender);
 
-    return schema;
-  };
+  const stats = [
+    personData.known_for_department && { label: "Known For", value: personData.known_for_department },
+    personData.birthday && { label: "Born", value: `${formatDate(personData.birthday)}${age ? ` (age ${age})` : ""}` },
+    personData.place_of_birth && { label: "Birthplace", value: personData.place_of_birth },
+    gender && { label: "Gender", value: gender },
+    personData.popularity && { label: "Popularity", value: personData.popularity.toFixed(1) },
+  ].filter(Boolean);
+
+  const BIO_LIMIT = 400;
+  const biography = personData.biography || "";
+  const bioTruncated = biography.length > BIO_LIMIT && !bioExpanded;
 
   return (
     <>
       <Head>
         <title>{personData.name} - Biography & Filmography | Veflix</title>
-        <meta
-          name="description"
-          content={`Learn about ${personData.name}, ${
-            personData.known_for_department
-          }. ${
-            personData.biography
-              ? personData.biography.substring(0, 150) + "..."
-              : `Explore ${personData.name}'s filmography and career.`
-          }`}
-        />
-        <meta
-          name="keywords"
-          content={`${personData.name}, actor, actress, director, producer, filmography, biography, movies, TV shows, Veflix`}
-        />
-        <meta
-          property="og:title"
-          content={`${personData.name} - Biography & Filmography | Veflix`}
-        />
-        <meta
-          property="og:description"
-          content={`Learn about ${personData.name}, ${personData.known_for_department}.`}
-        />
+        <meta name="description" content={`Learn about ${personData.name}, ${personData.known_for_department}. ${biography.substring(0, 150)}...`} />
+        <meta name="keywords" content={`${personData.name}, actor, actress, director, producer, filmography, biography, Veflix`} />
+        <meta property="og:title" content={`${personData.name} - Biography & Filmography | Veflix`} />
+        <meta property="og:description" content={`Learn about ${personData.name}, ${personData.known_for_department}.`} />
         <meta property="og:type" content="profile" />
         {personData.profile_path && (
-          <meta
-            property="og:image"
-            content={`https://image.tmdb.org/t/p/w500${personData.profile_path}`}
-          />
+          <meta property="og:image" content={`https://image.tmdb.org/t/p/w500${personData.profile_path}`} />
         )}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content={`${personData.name} - Biography & Filmography | Veflix`}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(generatePersonSchema(personData)) }}
         />
-        <meta
-          name="twitter:description"
-          content={`Learn about ${personData.name}, ${personData.known_for_department}.`}
-        />
-        {/* JSON-LD Person Schema */}
-        {personData && (
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(generatePersonSchema(personData)),
-            }}
-          />
-        )}
       </Head>
-      <div className="min-h-screen bg-[#141414]">
+
+      <div className="min-h-screen bg-black">
         <Header />
 
-        {/* Hero Section */}
-        <div className="pt-20 pb-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Profile Image */}
+        {/* Hero */}
+        <div className="relative">
+          {/* Background blur from portrait */}
+          {personData.profile_path && (
+            <div className="absolute inset-0 h-[420px] overflow-hidden">
+              <img
+                src={getTMDBImageUrl(personData.profile_path, IMAGE_CONFIG.SIZES.PROFILE.LARGE)}
+                alt=""
+                aria-hidden="true"
+                className="w-full h-full object-cover object-top scale-110 blur-2xl opacity-20"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black" />
+            </div>
+          )}
+
+          <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pt-28 pb-10">
+            <div className="flex flex-col sm:flex-row gap-8 items-start">
+              {/* Portrait */}
               <div className="flex-shrink-0">
-                <div className="relative w-80 h-96 lg:w-96 lg:h-[500px] rounded-lg overflow-hidden shadow-2xl">
+                <div className="relative w-44 h-56 sm:w-52 sm:h-64 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
                   {personData.profile_path ? (
                     <Image
-                      src={getTMDBImageUrl(
-                        personData.profile_path,
-                        IMAGE_CONFIG.SIZES.PROFILE.LARGE
-                      )}
+                      src={getTMDBImageUrl(personData.profile_path, IMAGE_CONFIG.SIZES.PROFILE.LARGE)}
                       alt={personData.name}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 320px, 384px"
+                      sizes="(max-width: 640px) 176px, 208px"
                       priority
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                      <svg
-                        className="w-24 h-24 text-gray-400"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                        />
+                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-gray-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Person Info */}
-              <div className="flex-1 space-y-6">
-                <div>
-                  <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2">
-                    {personData.name}
-                  </h1>
-                  <div className="flex items-center space-x-4 text-gray-300">
-                    <span className="bg-red-600 px-3 py-1 rounded-full text-sm font-semibold">
-                      {personData.known_for_department}
-                    </span>
-                    {personData.popularity && (
-                      <span className="flex items-center space-x-1">
-                        <svg
-                          className="w-4 h-4 text-yellow-400"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <span>{personData.popularity.toFixed(1)}</span>
-                      </span>
-                    )}
-                  </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold mb-3 leading-tight">
+                  {personData.name}
+                </h1>
+
+                {/* Role badge */}
+                {personData.known_for_department && (
+                  <span className="inline-block bg-red-600/20 border border-red-600/40 text-red-400 text-xs font-semibold px-3 py-1 rounded-full mb-5 tracking-wide">
+                    {personData.known_for_department}
+                  </span>
+                )}
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mb-6">
+                  {stats.map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-gray-600 text-[10px] uppercase tracking-widest font-medium mb-0.5">{stat.label}</p>
+                      <p className="text-gray-200 text-sm leading-snug">{stat.value}</p>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Personal Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        className="w-5 h-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
+                {/* Links */}
+                <div className="flex flex-wrap gap-3">
+                  {personData.imdb_id && (
+                    <a
+                      href={`https://www.imdb.com/name/${personData.imdb_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:text-yellow-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
                       </svg>
-                      <span className="text-gray-300">Birthday:</span>
-                      <span className="text-white">
-                        {formatDate(personData.birthday)}
-                      </span>
-                      {getAge(personData.birthday) && (
-                        <span className="text-gray-400">
-                          ({getAge(personData.birthday)} years old)
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        className="w-5 h-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span className="text-gray-300">Place of Birth:</span>
-                      <span className="text-white">
-                        {personData.place_of_birth || "Unknown"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        className="w-5 h-5 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                      <span className="text-gray-300">Gender:</span>
-                      <span className="text-white">
-                        {getGenderText(personData.gender)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {personData.homepage && (
-                      <div className="flex items-center space-x-2">
-                        <svg
-                          className="w-5 h-5 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"
-                          />
-                        </svg>
-                        <span className="text-gray-300">Website:</span>
-                        <a
-                          href={personData.homepage}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          Official Site
-                        </a>
-                      </div>
-                    )}
-
-                    {personData.imdb_id && (
-                      <a
-                        href={`https://www.imdb.com/name/${personData.imdb_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-yellow-400 hover:text-yellow-300 transition-colors"
-                      >
-                        View on IMDb
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Also Known As */}
-                {personData.also_known_as &&
-                  personData.also_known_as.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-2">
-                        Also Known As
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {personData.also_known_as.map((name, index) => (
-                          <span
-                            key={index}
-                            className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm"
-                          >
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                      IMDb
+                    </a>
                   )}
-
-                {/* Biography */}
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">
-                    Biography
-                  </h3>
-                  <p className="text-gray-300 leading-relaxed">
-                    {personData.biography || "No biography available."}
-                  </p>
+                  {personData.homepage && (
+                    <a
+                      href={personData.homepage}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 bg-white/5 border border-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Official Site
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Known For Section */}
-        <KnownFor knownWorks={personData.known_works} personId={id} />
+        {/* Biography */}
+        {biography && (
+          <div className="max-w-7xl mx-auto px-6 md:px-10 py-6">
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 md:p-8">
+              <h2 className="text-white text-lg font-semibold mb-4 tracking-tight">Biography</h2>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                {bioTruncated ? biography.slice(0, BIO_LIMIT) + "…" : biography}
+              </p>
+              {biography.length > BIO_LIMIT && (
+                <button
+                  onClick={() => setBioExpanded((v) => !v)}
+                  className="mt-3 text-red-400 hover:text-red-300 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  {bioExpanded ? "Show less" : "Read more"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Also Known As */}
+        {personData.also_known_as?.length > 0 && (
+          <div className="max-w-7xl mx-auto px-6 md:px-10 py-4">
+            <h3 className="text-gray-500 text-xs uppercase tracking-widest font-medium mb-3">Also Known As</h3>
+            <div className="flex flex-wrap gap-2">
+              {personData.also_known_as.slice(0, 8).map((name, index) => (
+                <span key={index} className="bg-white/5 text-gray-400 text-xs px-3 py-1.5 rounded-full border border-white/5">
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Known For */}
+        <div className="pt-6 pb-24">
+          <KnownFor knownWorks={personData.known_works} personId={id} />
+        </div>
       </div>
     </>
   );

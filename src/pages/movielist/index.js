@@ -43,10 +43,7 @@ const CATEGORY_CONFIG = {
   },
 };
 
-const PLATFORM_LABELS = {
-  movie: "Movies",
-  tv: "TV Shows",
-};
+const PLATFORM_LABELS = { movie: "Movies", tv: "TV Shows" };
 
 export default function MovieList() {
   const [movies, setMovies] = useState([]);
@@ -78,7 +75,7 @@ export default function MovieList() {
         setError(null);
 
         if (!process.env.NEXT_PUBLIC_MOVIE_API_KEY) {
-          throw new Error("TMDB API key is missing. Please add NEXT_PUBLIC_MOVIE_API_KEY to your .env.local file");
+          throw new Error("TMDB API key is missing.");
         }
 
         const data = await tmdbApi.getMoviesByCategory(category, page, platform);
@@ -91,7 +88,6 @@ export default function MovieList() {
           setHasMore(false);
         }
       } catch (err) {
-        console.error("Error fetching movies:", err);
         setError(err.message);
       } finally {
         setIsLoading(false);
@@ -166,8 +162,6 @@ export default function MovieList() {
         <meta property="og:description" content={description} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${pageTitle} | Veflix`} />
-        <meta name="twitter:description" content={description} />
         {movies.length > 0 && (
           <script
             type="application/ld+json"
@@ -180,35 +174,44 @@ export default function MovieList() {
         <Header />
 
         {/* Page header */}
-        <div className="pt-20 pb-2 px-4 md:px-8">
+        <div className="pt-20 pb-0 px-6 md:px-10">
           <div className="max-w-screen-2xl mx-auto">
-            <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-              <span className="hover:text-gray-300 cursor-pointer transition-colors" onClick={() => router.push("/")}>Home</span>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-gray-600 text-xs mb-4">
+              <button
+                onClick={() => router.push("/")}
+                className="hover:text-gray-400 transition-colors cursor-pointer"
+              >
+                Home
+              </button>
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span className="text-gray-400">{platformLabel}</span>
+              <span className="text-gray-500">{platformLabel}</span>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-red-500">{activeConfig.icon}</span>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{pageTitle}</h1>
+            {/* Title row */}
+            <div className="flex items-end justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-red-500">{activeConfig.icon}</span>
+                <div>
+                  <h1 className="text-white text-2xl md:text-3xl font-bold tracking-tight leading-tight">
+                    {pageTitle}
+                  </h1>
+                  <p className="text-gray-500 text-sm mt-0.5">{activeConfig.description}</p>
                 </div>
-                <p className="text-gray-400 text-sm">{activeConfig.description}</p>
               </div>
               {movies.length > 0 && !isLoading && (
-                <span className="text-gray-500 text-sm shrink-0">{movies.length}+ titles</span>
+                <span className="text-gray-600 text-sm shrink-0 pb-0.5">{movies.length}+ titles</span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Category tab strip */}
-        <div className="sticky top-16 z-40 bg-black/90 backdrop-blur-md border-b border-white/5 px-4 md:px-8">
+        {/* Category tabs */}
+        <div className="sticky top-16 z-40 bg-black/95 backdrop-blur-md border-b border-white/[0.06] px-6 md:px-10">
           <div className="max-w-screen-2xl mx-auto">
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
+            <div className="flex items-center gap-1 overflow-x-auto py-3" style={{ scrollbarWidth: "none" }}>
               {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
                 const isActive = category === key;
                 return (
@@ -217,11 +220,13 @@ export default function MovieList() {
                     onClick={() => handleCategoryChange(key)}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer transition-all duration-200 shrink-0 ${
                       isActive
-                        ? "bg-red-600 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-white/10"
+                        ? "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                        : "text-gray-400 hover:text-white hover:bg-white/8"
                     }`}
                   >
-                    <span className={isActive ? "text-white" : "text-gray-500"}>{config.icon}</span>
+                    <span className={isActive ? "text-white" : "text-gray-500"}>
+                      {config.icon}
+                    </span>
                     {config.label}
                   </button>
                 );
@@ -230,8 +235,8 @@ export default function MovieList() {
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="px-4 md:px-8 py-6">
+        {/* Grid */}
+        <div className="px-6 md:px-10 py-8 pb-28">
           <div className="max-w-screen-2xl mx-auto">
             <MovieGridLayout
               movies={movies}

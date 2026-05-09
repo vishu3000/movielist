@@ -7,207 +7,188 @@ const Seasons = ({ tvShow, msid }) => {
   const [seasonDetails, setSeasonDetails] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [visibleEpisodes, setVisibleEpisodes] = useState(10);
+  const [expandedEpisode, setExpandedEpisode] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Set the first season as default selected when tvShow changes
   useEffect(() => {
-    if (tvShow?.seasons && tvShow.seasons.length > 0) {
+    if (tvShow?.seasons?.length > 0) {
       setSelectedSeason(tvShow.seasons[0]);
     }
   }, [tvShow]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch season details when selectedSeason changes
   useEffect(() => {
-    const fetchSeasonDetails = async () => {
-      if (!selectedSeason || !msid) return;
-
-      try {
-        const seasonData = await TMDBApi.getSeasonDetails(
-          msid,
-          selectedSeason.season_number
-        );
-        setSeasonDetails(seasonData);
-        setVisibleEpisodes(10); // Reset to show first 10 episodes when season changes
-      } catch (err) {
-        console.error("Error fetching season details:", err);
-      }
-    };
-
-    fetchSeasonDetails();
+    if (!selectedSeason || !msid) return;
+    setSeasonDetails(null);
+    setVisibleEpisodes(10);
+    setExpandedEpisode(null);
+    TMDBApi.getSeasonDetails(msid, selectedSeason.season_number)
+      .then(setSeasonDetails)
+      .catch(console.error);
   }, [selectedSeason, msid]);
 
-  const handleSeasonSelect = (season) => {
-    setSelectedSeason(season);
-    setSeasonDetails(null); // Reset season details while loading
-    setIsDropdownOpen(false); // Close dropdown after selection
-  };
+  if (!tvShow?.seasons?.length) return null;
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
-  const loadMoreEpisodes = () => {
-    setVisibleEpisodes((prev) => prev + 10);
-  };
-
-  if (!tvShow?.seasons || tvShow.seasons.length === 0) {
-    return null;
-  }
+  const contentRating = tvShow.content_ratings?.results?.[0]?.rating || "TV-MA";
 
   return (
-    <div className="bg-black min-h-screen">
-      <div className="max-w-6xl mx-auto px-8 py-8">
-        {/* Header Section */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-white text-3xl font-bold mb-2">Episodes</h1>
-            <div className="flex items-center gap-2 text-gray-300 text-sm">
-              <span className="bg-gray-900 px-2 py-1 rounded text-xs">
-                {tvShow.content_ratings?.results?.[0]?.rating || "TV-MA"}
-              </span>
-              <span>
-                {selectedSeason?.name}:{" "}
-                {tvShow.content_ratings?.results?.[0]?.descriptors?.join(
-                  ", "
-                ) || "Violence, language, adult content"}
-              </span>
-            </div>
-          </div>
-
-          {/* Season Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={toggleDropdown}
-              className="bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-700 transition-colors"
-            >
-              {selectedSeason?.name || "Season 1"}
-              <svg
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-            {isDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10 min-w-[120px]">
-                {tvShow.seasons.map((season) => (
-                  <button
-                    key={season.id}
-                    onClick={() => handleSeasonSelect(season)}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors rounded-lg ${
-                      selectedSeason?.id === season.id
-                        ? "text-white bg-gray-700"
-                        : "text-gray-300"
-                    }`}
-                  >
-                    {season.name}
-                  </button>
-                ))}
-              </div>
+    <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-white text-xl font-semibold tracking-tight mb-1">Episodes</h2>
+          <div className="flex items-center gap-2">
+            <span className="border border-gray-600 text-gray-400 text-[10px] px-2 py-0.5 rounded font-medium tracking-wide">
+              {contentRating}
+            </span>
+            {selectedSeason && (
+              <span className="text-gray-500 text-xs">{selectedSeason.name}</span>
             )}
           </div>
         </div>
 
-        {/* Episodes List */}
-        {seasonDetails && seasonDetails.episodes && (
-          <div className="space-y-1">
-            {seasonDetails.episodes
-              .slice(0, visibleEpisodes)
-              .map((episode, index) => (
-                <div
-                  key={episode.id}
-                  className="bg-[#141414] hover:bg-gray-900 transition-colors cursor-pointer"
+        {/* Season Selector */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen((v) => !v)}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer"
+          >
+            {selectedSeason?.name || "Season 1"}
+            <svg
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 min-w-[160px] overflow-hidden py-1">
+              {tvShow.seasons.map((season) => (
+                <button
+                  key={season.id}
+                  onClick={() => { setSelectedSeason(season); setIsDropdownOpen(false); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer ${
+                    selectedSeason?.id === season.id
+                      ? "text-white bg-red-600/20 font-semibold"
+                      : "text-gray-300 hover:bg-white/5 hover:text-white"
+                  }`}
                 >
-                  <div className="flex items-start gap-4 py-4 px-6">
-                    {/* Episode Number */}
-                    <div className="flex-shrink-0 w-12 text-center">
-                      <span className="text-white text-2xl font-bold">
-                        {episode.episode_number}
-                      </span>
-                    </div>
+                  {season.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-                    {/* Episode Thumbnail */}
-                    <div className="flex-shrink-0">
+      {/* Episodes */}
+      {seasonDetails?.episodes ? (
+        <div className="space-y-1">
+          {seasonDetails.episodes.slice(0, visibleEpisodes).map((episode) => {
+            const isExpanded = expandedEpisode === episode.id;
+            return (
+              <div
+                key={episode.id}
+                className="group rounded-xl overflow-hidden hover:bg-white/5 transition-colors duration-200 cursor-pointer"
+                onClick={() => setExpandedEpisode(isExpanded ? null : episode.id)}
+              >
+                <div className="flex items-start gap-4 p-4">
+                  {/* Episode number */}
+                  <div className="flex-shrink-0 w-8 pt-1 text-right">
+                    <span className="text-gray-500 text-base font-medium">
+                      {episode.episode_number}
+                    </span>
+                  </div>
+
+                  {/* Thumbnail */}
+                  <div className="flex-shrink-0 relative rounded-lg overflow-hidden bg-gray-900"
+                    style={{ width: 128, height: 72 }}>
+                    {episode.still_path ? (
                       <Image
-                        src={
-                          episode.still_path
-                            ? `https://image.tmdb.org/t/p/w500${episode.still_path}`
-                            : "/placeholder.png"
-                        }
+                        src={`https://image.tmdb.org/t/p/w300${episode.still_path}`}
                         alt={episode.name}
-                        width={128}
-                        height={80}
-                        className="w-32 h-20 object-cover rounded"
-                        onError={(e) => {
-                          e.target.src = "/placeholder.png";
-                        }}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="128px"
                       />
-                    </div>
-
-                    {/* Episode Content */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-lg mb-2">
-                        {episode.name}
-                      </h3>
-                      <p className="text-gray-400 text-sm leading-relaxed">
-                        {episode.overview || "No description available."}
-                      </p>
-                    </div>
-
-                    {/* Episode Duration */}
-                    <div className="flex-shrink-0">
-                      <span className="text-white text-sm">
-                        {episode.runtime ? `${episode.runtime}m` : "N/A"}
-                      </span>
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    )}
+                    {/* Play hover overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-white text-sm font-semibold leading-snug line-clamp-1 group-hover:text-red-400 transition-colors duration-200">
+                        {episode.name}
+                      </h4>
+                      <span className="flex-shrink-0 text-gray-500 text-xs pt-0.5">
+                        {episode.runtime ? `${episode.runtime}m` : ""}
+                      </span>
+                    </div>
+                    <p className={`text-gray-400 text-xs leading-relaxed mt-1 ${isExpanded ? "" : "line-clamp-2"}`}>
+                      {episode.overview || "No description available."}
+                    </p>
+                  </div>
                 </div>
-              ))}
-
-            {/* Load More Button */}
-            {visibleEpisodes < seasonDetails.episodes.length && (
-              <div className="flex justify-center pt-6">
-                <button
-                  onClick={loadMoreEpisodes}
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Load More Episodes
-                </button>
               </div>
-            )}
-          </div>
-        )}
+            );
+          })}
 
-        {/* Loading State */}
-        {selectedSeason && !seasonDetails && (
-          <div className="flex justify-center items-center py-12">
-            <div className="text-gray-400">Loading episodes...</div>
-          </div>
-        )}
-      </div>
+          {visibleEpisodes < seasonDetails.episodes.length && (
+            <div className="pt-4 flex justify-center">
+              <button
+                onClick={(e) => { e.stopPropagation(); setVisibleEpisodes((v) => v + 10); }}
+                className="flex items-center gap-2 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer py-2 px-4 rounded-lg hover:bg-white/5"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                Show more episodes
+              </button>
+            </div>
+          )}
+        </div>
+      ) : selectedSeason ? (
+        <div className="space-y-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-4 p-4 rounded-xl animate-pulse">
+              <div className="w-8 h-4 bg-white/10 rounded mt-1" />
+              <div className="w-32 h-18 bg-white/10 rounded-lg" style={{ height: 72 }} />
+              <div className="flex-1 space-y-2 pt-1">
+                <div className="h-3 bg-white/10 rounded w-2/3" />
+                <div className="h-2.5 bg-white/5 rounded w-full" />
+                <div className="h-2.5 bg-white/5 rounded w-3/4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 };

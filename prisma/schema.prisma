@@ -83,6 +83,7 @@ model TrailerWatch {
   mediaType String   // "movie" | "tv"
   title     String
   poster    String?
+  completed Boolean  @default(false)
   watchedAt DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

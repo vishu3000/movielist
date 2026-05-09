@@ -189,6 +189,13 @@ const TVDetails = () => {
           onClose={() => setIsTrailerModalOpen(false)}
           trailerUrl={tvShow?.trailer}
           movieTitle={tvShow?.title}
+          onCompleted={() => {
+            fetch("/api/trailerHistory", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tmdbId: String(tvShow.id), mediaType: "tv" }),
+            }).catch(() => {});
+          }}
         />
       </div>
     </>

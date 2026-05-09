@@ -1,17 +1,16 @@
 import { movieApiConfig } from "../../config/apiConfig";
 import { Header, MovieGrid } from "../components";
+import HomepageHero from "../components/ui/HomepageHero";
 import Head from "next/head";
 
 export default function Home() {
   const { movieRows, tvRows } = movieApiConfig;
 
-  // Combine movie and TV rows with type indicators
   const allRows = [
     ...movieRows.map((row) => ({ ...row, type: "movie" })),
     ...tvRows.map((row) => ({ ...row, type: "tv" })),
   ];
 
-  // JSON-LD Schema for the home page
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -58,30 +57,29 @@ export default function Home() {
         />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content="Veflix - Stream Movies & TV Shows"
-        />
+        <meta name="twitter:title" content="Veflix - Stream Movies & TV Shows" />
         <meta
           name="twitter:description"
           content="Discover and stream the latest movies and TV shows on Veflix."
         />
-        {/* JSON-LD Schemas */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(websiteSchema),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationSchema),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
       </Head>
+
       <div className="min-h-screen bg-[#141414]">
+        {/* Header floats over hero */}
         <Header />
+
+        {/* Full-viewport hero with trending feature */}
+        <HomepageHero />
+
+        {/* Content rows */}
         <MovieGrid rows={allRows} />
       </div>
     </>

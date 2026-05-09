@@ -251,8 +251,8 @@ export default function Profile() {
         const data = await res.json();
         throw new Error(data.message ?? "Failed to save changes");
       }
-      const updated = await res.json();
-      await update({ name: updated.name, image: updated.image });
+      await res.json();
+      await update(); // triggers jwt callback which re-fetches from DB
       setEditing(false);
       setEditImage(null);
     } catch (e) {

@@ -63,22 +63,22 @@ export const authOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user, account, trigger, session }) {
-      // Initial sign in — seed token from the user object
+    async jwt({ token, user, account }) {
+      // Initial sign in — store only the user id; data is always fetched fresh below
       if (account && user) {
-        return {
-          ...token,
-          id: user.id,
-          name: user.name ?? token.name,
-          image: user.image ?? null,
-        };
+        token.id = user.id;
       }
 
-      // Client called update({ name, image }) — refresh token fields
-      if (trigger === "update" && session) {
-        if (session.name !== undefined) token.name = session.name;
-        if (session.image !== undefined) token.image = session.image;
-        return token;
+      // Always fetch fresh name/image from DB so cookie stays small and data is current
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: { name: true, image: true },
+        });
+        if (dbUser) {
+          token.name = dbUser.name;
+          token.image = dbUser.image ?? null;
+        }
       }
 
       return token;

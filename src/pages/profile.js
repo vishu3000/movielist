@@ -292,25 +292,111 @@ export default function Profile() {
 
         <div className="relative max-w-5xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
-            <Avatar name={session.user.name} image={session.user.image} size="lg" />
+            {/* Avatar — clickable overlay in edit mode */}
+            <div className="relative group flex-shrink-0">
+              <Avatar
+                name={editing ? editName : session.user.name}
+                image={editing ? (editImage ?? session.user.image) : session.user.image}
+                size="lg"
+              />
+              {editing && (
+                <>
+                  <label
+                    htmlFor="avatar-upload"
+                    className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    aria-label="Change profile photo"
+                  >
+                    <IconCamera className="w-6 h-6 text-white" />
+                    <span className="text-xs text-white font-medium">Change</span>
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleFileChange}
+                  />
+                </>
+              )}
+            </div>
 
-            <div className="flex-1 text-center sm:text-left">
+            {/* Name + email — or edit form */}
+            <div className="flex-1 text-center sm:text-left min-w-0">
               <p className="text-xs uppercase tracking-widest text-rose-400 font-semibold mb-1">
                 Member
               </p>
-              <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
-                {session.user.name}
-              </h1>
-              <p className="text-gray-400 text-sm mt-1">{session.user.email}</p>
+
+              {editing ? (
+                <div>
+                  <label htmlFor="edit-name" className="sr-only">
+                    Display name
+                  </label>
+                  <input
+                    id="edit-name"
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    maxLength={60}
+                    autoFocus
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                  />
+                  {saveError && (
+                    <p className="text-rose-400 text-sm mt-1" role="alert">
+                      {saveError}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors duration-200 cursor-pointer"
+                    >
+                      {saving ? (
+                        <IconLoader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <IconCheck className="w-4 h-4" />
+                      )}
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-4 py-2 border border-white/10 hover:border-white/30 text-gray-400 hover:text-white text-sm rounded-lg transition-all duration-200 cursor-pointer"
+                    >
+                      <IconX className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                      {session.user.name}
+                    </h1>
+                    <button
+                      onClick={handleEditStart}
+                      aria-label="Edit profile"
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-all duration-200 cursor-pointer"
+                    >
+                      <IconPencil className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-1">{session.user.email}</p>
+                </>
+              )}
             </div>
 
-            <button
-              onClick={() => signOut({ callbackUrl: "/auth/login" })}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/30 text-sm transition-all duration-200 cursor-pointer"
-            >
-              <SignOutIcon />
-              Sign out
-            </button>
+            {/* Sign out — hidden during edit mode */}
+            {!editing && (
+              <button
+                onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/30 text-sm transition-all duration-200 cursor-pointer"
+              >
+                <SignOutIcon />
+                Sign out
+              </button>
+            )}
           </div>
 
           {/* Stats row */}

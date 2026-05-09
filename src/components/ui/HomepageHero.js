@@ -129,10 +129,10 @@ export default function HomepageHero() {
           </p>
 
           {/* Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               href={`/moviedetails/${movie.id}`}
-              className="flex items-center gap-2 bg-white text-black font-semibold px-7 py-3 rounded-md hover:bg-white/85 transition-colors duration-200 cursor-pointer text-base"
+              className="flex items-center gap-2 bg-white text-black font-semibold px-5 sm:px-7 py-3 rounded-md hover:bg-white/85 transition-colors duration-200 cursor-pointer text-sm sm:text-base"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
@@ -141,7 +141,7 @@ export default function HomepageHero() {
             </Link>
             <Link
               href={`/moviedetails/${movie.id}`}
-              className="flex items-center gap-2 bg-gray-500/60 hover:bg-gray-500/80 text-white font-semibold px-7 py-3 rounded-md transition-colors duration-200 cursor-pointer text-base backdrop-blur-sm"
+              className="flex items-center gap-2 bg-gray-500/60 hover:bg-gray-500/80 text-white font-semibold px-5 sm:px-7 py-3 rounded-md transition-colors duration-200 cursor-pointer text-sm sm:text-base backdrop-blur-sm"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -152,8 +152,8 @@ export default function HomepageHero() {
         </div>
       </div>
 
-      {/* Age rating badge — right side */}
-      <div className="absolute bottom-28 right-0 z-10">
+      {/* Age rating badge — right side, hidden on mobile to avoid overlap */}
+      <div className="hidden sm:block absolute bottom-28 right-0 z-10">
         <div className="border-l-2 border-gray-400 pl-3 pr-8 py-1.5">
           <span className="text-gray-300 text-sm font-medium">
             {movie.adult ? "18+" : "All Ages"}
